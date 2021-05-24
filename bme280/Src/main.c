@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include "BMPXX80.h"
 #include "delays.h"
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,9 +49,13 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+// global variables for temperature, pressure humidity
 float temperature;
 float humidity;
 int32_t pressure;
+
+// timer flag
+bool timerFlag = false;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -61,7 +66,15 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if (htim->Instance == TIM11) {
+		if (timerFlag == false) {
+			timerFlag = true;
+			BME280_ReadTemperatureAndPressureAndHuminidity(&temperature, &pressure, &humidity);
+		}
+	}
+}
 /* USER CODE END 0 */
 
 /**
@@ -95,8 +108,10 @@ int main(void)
   MX_SPI3_Init();
   MX_TIM10_Init();
   MX_USART1_UART_Init();
+  MX_TIM11_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start(&htim10);
+  HAL_TIM_Base_Start_IT(&htim11);
   BME280_Init(&hspi3, BME280_TEMPERATURE_16BIT, BME280_PRESSURE_ULTRALOWPOWER, BME280_HUMINIDITY_STANDARD, BME280_NORMALMODE);
   BME280_SetConfig(BME280_STANDBY_MS_10, BME280_FILTER_OFF);
   /* USER CODE END 2 */
@@ -105,10 +120,10 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-	  BME280_ReadTemperatureAndPressureAndHuminidity(&temperature, &pressure, &humidity);
-	  printf("Temp: %f, Hum: %f, Pres: %ld\n\r", temperature, humidity, pressure);
-	  HAL_Delay(500);
+	  if (timerFlag == true) {
+		  printf("Temp: %.2f C, Hum: %.2f pr, Pres: %.2f hPa\n\r", temperature, humidity, pressure/((float)100.00));
+		  timerFlag = false;
+	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
