@@ -23,6 +23,7 @@
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
+#include "ring_buffer.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -43,7 +44,7 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
+#define RINGBUF_SIZE 4
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -53,7 +54,8 @@
 float temperature;
 float humidity;
 int32_t pressure;
-
+RingBuffer ringbuf;
+struct bme280_pkt buffer[RINGBUF_SIZE];
 // timer flag
 bool timerFlag = false;
 /* USER CODE END PV */
@@ -68,10 +70,15 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN 0 */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+	struct bme280_pkt tmp;
 	if (htim->Instance == TIM11) {
 		if (timerFlag == false) {
 			timerFlag = true;
 			BME280_ReadTemperatureAndPressureAndHuminidity(&temperature, &pressure, &humidity);
+			tmp.hum = humidity;
+			tmp.pres = pressure;
+			tmp.temp = temperature;
+			RingBuffer_PutPkt(&ringbuf, tmp);
 		}
 	}
 }
@@ -114,6 +121,8 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim11);
   BME280_Init(&hspi3, BME280_TEMPERATURE_16BIT, BME280_PRESSURE_ULTRALOWPOWER, BME280_HUMINIDITY_STANDARD, BME280_NORMALMODE);
   BME280_SetConfig(BME280_STANDBY_MS_10, BME280_FILTER_OFF);
+  if (RingBuffer_Init(&ringbuf, buffer, RINGBUF_SIZE) == false)
+  	 return -1;
   /* USER CODE END 2 */
 
   /* Infinite loop */
