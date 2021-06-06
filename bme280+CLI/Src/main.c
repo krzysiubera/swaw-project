@@ -45,7 +45,7 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define RINGBUF_SIZE 5
+#define RINGBUF_SIZE 180
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -63,6 +63,10 @@ void GetTemp(void);
 void GetHum(void);
 void GetPress(void);
 void GetAll(void);
+void GetAvgTemp(void);
+void GetAvgHum(void);
+void GetAvgPress(void);
+void GetAvgAll(void);
 void GetAllContinuous(void);
 /* USER CODE END PFP */
 
@@ -83,11 +87,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 //cli commands
 cli_command cli_commands[] = {
+	{ .command = "\\get cont all", .callback = GetAllContinuous},
 	{ .command = "\\get temp", .callback = GetTemp},
 	{ .command = "\\get hum", .callback = GetHum},
 	{ .command = "\\get press", .callback = GetPress},
 	{ .command = "\\get all", .callback = GetAll},
-	{ .command = "\\test", .callback = GetAllContinuous},
+	{ .command = "\\get avg temp", .callback = GetAvgTemp},
+	{ .command = "\\get avg hum", .callback = GetAvgHum},
+	{ .command = "\\get avg press", .callback = GetAvgPress},
+	{ .command = "\\get avg all", .callback = GetAvgAll},
 	CLI_CMD_LIST_END
 };
 
@@ -217,51 +225,88 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 void GetTemp(void)
 {
+	float Temperature;
+	Temperature = BME280_ReadTemperature();
+	printf("\r\nTemperature: %.2f%%\r\n", Temperature);
+}
+void GetHum(void)
+{
+	float Humidity;
+	Humidity = BME280_ReadHuminidity();
+	printf("\r\nHumidity: %.2f%%\r\n", Humidity);
+}
+void GetPress(void)
+{
+	uint32_t Pressure;
+	Pressure = BME280_ReadPressure();
+	printf("\r\nPressure: %.2f hPa\r\n", Pressure/(float) 100.0);
+}
+void GetAll(void)
+{
+	struct bme280_pkt meas;
+	BME280_ReadTemperatureAndPressureAndHuminidity(&meas.temp, &meas.pres, &meas.hum);
+	printf("\r\nTemp: %.2f °C, Hum: %.2f%%, Press: %.2f hPa\n\r", meas.temp, meas.hum, meas.pres/(float) 100.0);
+
+}
+void GetAvgTemp(void)
+{
 	struct bme280_pkt meas;
 	uint16_t count = 0;
-	float Temperature;
+	float Temperature = 0.0;
 
-	while((RingBuffer_GetPkt(&ringbuf, &meas)) && (count < RingBuffer_GetLen(&ringbuf)))
+	while((RingBuffer_GetPkt(&ringbuf, &meas)) && (count < ringbuf.count))
 	{
 		count++;
 		Temperature += meas.temp;
 	}
 
-	printf("\r\nTemperature: %.2f °C\r\n", Temperature/count);
+	printf("\r\nAvg. Temperature: %.2f °C\r\n", Temperature/count);
 }
-void GetHum(void)
+void GetAvgHum(void)
 {
 	struct bme280_pkt meas;
 	uint16_t count = 0;
-	float Humidity;
-
-	while((RingBuffer_GetPkt(&ringbuf, &meas)) && (count < RingBuffer_GetLen(&ringbuf)))
+	float Humidity = 0.0;
+	//__disable_irq();
+	while((RingBuffer_GetPkt(&ringbuf, &meas)) && (count < ringbuf.count))
 	{
 		count++;
 		Humidity += meas.hum;
 	}
-
-	printf("\r\nHumidity: %.2f%%\r\n", Humidity/count);
+	//__enable_irq();
+	printf("\r\nAvg. Humidity: %.2f%%\r\n", Humidity/count);
 }
-void GetPress(void)
+void GetAvgPress(void)
 {
 	struct bme280_pkt meas;
 	uint16_t count = 0;
-	float Pressure;
+	uint32_t Pressure = 0.0;
 
-	while((RingBuffer_GetPkt(&ringbuf, &meas)) && (count < RingBuffer_GetLen(&ringbuf)))
+	while((RingBuffer_GetPkt(&ringbuf, &meas)) && (count < ringbuf.count))
 	{
 		count++;
 		Pressure += meas.pres;
 	}
 
-	printf("\r\nPressure: %.2f hPa\r\n", BME280_ReadPressure()/(((float) 100.0)*count));
+	printf("\r\nAvg. Pressure: %.2f hPa\r\n", Pressure/(((float) 100.0)*count));
 }
-void GetAll(void)
+void GetAvgAll(void)
 {
-	struct bme280_pkt measure;
-	BME280_ReadTemperatureAndPressureAndHuminidity(&measure.temp, &measure.pres, &measure.hum);
-	printf("\r\nTemp: %.2f °C, Hum: %.2f%%, Press: %.2f hPa\n\r", measure.temp, measure.hum, measure.pres/((float)100.00));
+	struct bme280_pkt meas;
+	uint16_t count = 0;
+	uint32_t Pressure = 0.0;
+	float Humidity = 0.0;
+	float Temperature = 0.0;
+
+	while((RingBuffer_GetPkt(&ringbuf, &meas)) && (count < ringbuf.count))
+	{
+			count++;
+			Pressure += meas.pres;
+			Humidity += meas.hum;
+			Temperature += meas.temp;
+	}
+
+	printf("\r\nTemp: %.2f °C, Hum: %.2f%%, Press: %.2f hPa\n\r", Temperature/count, Humidity/count, Pressure/(((float) 100.0)*count));
 }
 void GetAllContinuous(void)
 {
