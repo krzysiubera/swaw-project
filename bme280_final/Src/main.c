@@ -80,7 +80,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			RingBuffer_PutPkt(&ringbuf, tmp);
 
 			if (print_enable) {
-				printf("\r\nTemp: %.2f °C, Hum: %.2f%%, Press: %.2f hPa", tmp.temp, tmp.hum, tmp.pres/((float)100.00));
+				printf("\r\nTemp: %.2f deg C, Hum: %.2f%%, Press: %.2f hPa", tmp.temp, tmp.hum, tmp.pres/((float)100.00));
 			}
 		}
 }
@@ -217,7 +217,7 @@ void GetTemp(void)
 {
 	float Temperature;
 	Temperature = BME280_ReadTemperature();
-	printf("\r\nTemperature: %.2f%%\r\n", Temperature);
+	printf("\r\nTemperature: %.2f deg C\r\n", Temperature);
 }
 void GetHum(void)
 {
@@ -235,7 +235,7 @@ void GetAll(void)
 {
 	struct bme280_pkt meas;
 	BME280_ReadTemperatureAndPressureAndHuminidity(&meas.temp, &meas.pres, &meas.hum);
-	printf("\r\nTemp: %.2f °C, Hum: %.2f%%, Press: %.2f hPa\r\n", meas.temp, meas.hum, meas.pres/(float) 100.0);
+	printf("\r\nTemp: %.2f deg C, Hum: %.2f%%, Press: %.2f hPa\r\n", meas.temp, meas.hum, meas.pres/(float) 100.0);
 
 }
 void GetAvgTemp(void)
@@ -250,7 +250,7 @@ void GetAvgTemp(void)
 		Temperature += meas.temp;
 	}
 
-	printf("\r\nAvg. Temperature: %.2f °C\r\n", Temperature/count);
+	printf("\r\nAvg. Temperature: %.2f deg C\r\n", Temperature/count);
 }
 void GetAvgHum(void)
 {
@@ -296,7 +296,7 @@ void GetAvgAll(void)
 			Temperature += meas.temp;
 	}
 
-	printf("\r\nTemp: %.2f °C, Hum: %.2f%%, Press: %.2f hPa\r\n", Temperature/count, Humidity/count, Pressure/(((float) 100.0)*count));
+	printf("\r\nTemp: %.2f deg C, Hum: %.2f%%, Press: %.2f hPa\r\n", Temperature/count, Humidity/count, Pressure/(((float) 100.0)*count));
 }
 void GetAllContinuous(void)
 {
