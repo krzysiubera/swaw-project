@@ -1,2 +1,0 @@
-# skm-lab
-Laboratorium

@@ -1,3 +1,22 @@
+# STM32Cube copied library and project folders
+Drivers/*
+Release/*
+MDK-ARM/*
+EWARM/*
+.settings/*
+Debug/*
+
+# CrossWorks project files
+!*/*.hzp
+!*/*.hzs
+*.o
+.mxproject
+*.cproject
+*.project
+*.ioc
+*.launch
+*.ld
+
 # Prerequisites
 *.d
 
@@ -6,6 +25,7 @@
 *.ko
 *.obj
 *.elf
+
 
 # Linker output
 *.ilk
@@ -50,3 +70,8 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+#QT
+build-Security_System_Bluetooth_App-Desktop_Qt_5_15_2_MinGW_64_bit-Debug/*
+build-Security_System_Bluetooth_App-Android_Qt_5_15_2_Clang_Multi_Abi-Debug/*
+
