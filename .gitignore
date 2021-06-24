@@ -70,8 +70,3 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
-
-#QT
-build-Security_System_Bluetooth_App-Desktop_Qt_5_15_2_MinGW_64_bit-Debug/*
-build-Security_System_Bluetooth_App-Android_Qt_5_15_2_Clang_Multi_Abi-Debug/*
-
