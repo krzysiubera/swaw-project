@@ -38,4 +38,14 @@ To get measurements, a user needs to open a terminal program and open connection
 \help
 ```
 <img src="images/help.png" />
-
+- getting latest measurements
+```
+\get hum
+\get press
+\get temp
+\get all
+```
+<img src="images/get_hum.png" />
+<img src="images/get_press.png" />
+<img src="images/get_temp.png" />
+<img src="images/get_all.png" />
