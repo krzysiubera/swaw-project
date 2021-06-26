@@ -32,7 +32,7 @@ minutes.
 - PB7 <-> TXD
 
 ## A look on the CLI
-To get measurements, a user needs to open a terminal program and open connection. Available commands are:
+To get measurements, a user needs to connect to COMX interface using a terminal program, set baudrate to 115200 bps, and then type an appropriate command. Available commands are:
 - getting a list of all available commands
 ```
 \help
@@ -50,3 +50,23 @@ To get measurements, a user needs to open a terminal program and open connection
 <img src="images/get_press.png" />
 <img src="images/get_temp.png" />
 <img src="images/get_all.png" />
+- getting average measurements
+```
+\get avg hum
+\get avg press
+\get avg temp
+\get avg all
+```
+
+<img src="images/get_avg_hum.png" />
+<img src="images/get_avg_press.png" />
+<img src="images/get_avg_temp.png" />
+<img src="images/get_avg_all.png" />
+- continously displaying all measurements
+```
+\get cont all
+```
+<img src="images/get_cont_all.png" />
+
+## Further improvements
+- create a Python script to get data from UART and plot it in real time
