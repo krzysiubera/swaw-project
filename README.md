@@ -39,6 +39,7 @@ To get measurements, a user needs to open a terminal program and open connection
 ```
 <img src="images/help.png" />
 - getting latest measurements
+
 ```
 \get hum
 \get press
