@@ -16,3 +16,26 @@ minutes.
 <img src="images/bme280.png" />
 - PL2303 USB-UART converter
 <img src="images/usb_uart_conv.png" />
+
+## Physical connections between the board and the sensor
+- 3V <-> VCC
+- GND <-> GND
+- PB12 <-> SCL
+- PC12 <-> SDA
+- PA8 <-> CSB
+- PC11 <-> SD0
+
+## Physical connections between the board and the converter
+- 3V <-> VCCIO (not necessary)
+- GND <-> GND
+- PB6 <-> RXD
+- PB7 <-> TXD
+
+## A look on the CLI
+To get measurements, a user needs to open a terminal program and open connection. Available commands are:
+- getting a list of all available commands
+```
+\help
+```
+<img src="images/help.png" />
+
