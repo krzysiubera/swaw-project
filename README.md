@@ -32,7 +32,7 @@ minutes.
 - PB7 <-> TXD
 
 ## A look on the CLI
-To get measurements, a user needs to connect to COMX interface using a terminal program, set baudrate to 115200 bps, and then type an appropriate command. Available commands are:
+To get measurements, a user needs to connect to COM interface using a terminal program, set baudrate to 115200 bps, and then type an appropriate command. Available commands are:
 - getting a list of all available commands
 ```
 \help
