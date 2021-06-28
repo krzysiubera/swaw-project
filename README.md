@@ -14,7 +14,7 @@ minutes.
 <img src="images/stm32f4.png" />
 - BME280 sensor
 <img src="images/bme280.png" />
-- PL2303 USB-UART converter
+- PL2303 USB-UART converter (not needed in case of using Nucleo board)
 <img src="images/usb_uart_conv.png" />
 
 ## Physical connections between the board and the sensor
