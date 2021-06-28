@@ -71,3 +71,7 @@ To get measurements, a user needs to connect to COM interface using a terminal p
 
 ## Further improvements
 - create a Python script to get data from UART and plot it in real time
+- change method of calculating mean to running average
+- add light sensor, for example TSL25911
+- change method of communication between PC to microcontroller to wireless one, for example Bluetooth
+- change method of powering the microcontroller to battery one
