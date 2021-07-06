@@ -27,6 +27,7 @@ y_var = np.array(np.zeros([plot_window]))
 
 plt.ion()
 fig, ax = plt.subplots()
+ax.set_title('Temperature')
 line, = ax.plot(y_var)
 
 while True:
