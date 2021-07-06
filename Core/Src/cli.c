@@ -67,8 +67,8 @@ void CLI_Byte_Received_Callback(UART_HandleTypeDef *huart)
 {
 	if(huart->Instance == CLI_huart->Instance)
 	{
-		// było (char)13
-		if(byte == '\n') //if enter key is pressed
+		// byte == '\n'
+		if(byte == (char)13) //if enter key is pressed
 		{
 			CLI_Command_Check(rx_buf, rx_len);
 			rx_len = 0;
