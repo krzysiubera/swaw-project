@@ -28,10 +28,10 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include <stdbool.h>
-#include "BMPXX80.h"
 #include "delays.h"
 #include "ring_buffer.h"
 #include "cli.h"
+#include "bme280.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
