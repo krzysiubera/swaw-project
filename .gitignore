@@ -1,21 +1,4 @@
-# STM32Cube copied library and project folders
-Drivers/*
-Release/*
-MDK-ARM/*
-EWARM/*
-.settings/*
-Debug/*
-
-# CrossWorks project files
-!*/*.hzp
-!*/*.hzs
-*.o
-.mxproject
-*.cproject
-*.project
-*.ioc
-*.launch
-*.ld
+# https://github.com/github/gitignore/blob/master/C.gitignore
 
 # Prerequisites
 *.d
@@ -25,7 +8,6 @@ Debug/*
 *.ko
 *.obj
 *.elf
-
 
 # Linker output
 *.ilk
@@ -70,3 +52,16 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# cscope with Vim
+cscope.*
+
+#ctags with Vim
+tags
+types_c.taghl
+
+#CtrlP
+ctrlp.root
+
+#html
+*.html
