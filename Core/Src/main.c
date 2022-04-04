@@ -31,6 +31,7 @@
 #include <string.h>
 #include "delays.h"
 #include "bme280.h"
+#include "ring_buffer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -70,6 +71,10 @@ int __io_putchar(int ch) {
 	return 1;
 }
 
+#define RINGBUF_SIZE 180
+RingBuffer ring_buffer;
+struct bme280_pkt buffer[RINGBUF_SIZE];
+
 #define LINE_MAX_LENGTH 80
 static char line_buffer[LINE_MAX_LENGTH + 1];
 static uint32_t line_length;
@@ -81,12 +86,34 @@ void line_append() {
 			line_buffer[line_length] = '\0';
 
 			if (strcmp(line_buffer, "get temp") == 0) {
-				printf("Temperature : %.2f deg C\n", BME280_ReadTemperature());
+				printf("%.2f\n", BME280_ReadTemperature());
 			} else if (strcmp(line_buffer, "get press") == 0) {
-				printf("Pressure: %.2f hPa\n", BME280_ReadPressure() / (float) 100.0);
+				printf("%.2f\n", BME280_ReadPressure() / (float) 100.0);
 			} else if (strcmp(line_buffer, "get hum") == 0) {
-				printf("Humidity: %.2f %%\n", BME280_ReadHuminidity());
-			} else {
+				printf("%.2f\n", BME280_ReadHuminidity());
+			} else if (strcmp(line_buffer, "get meas temp") == 0) {
+				uint32_t count = 0;
+				struct bme280_pkt meas;
+				while ((RingBuffer_GetPkt(&ring_buffer, &meas)) && (count < ring_buffer.count)) {
+					count++;
+					printf("%.2f\n", meas.temp);
+				}
+			} else if (strcmp(line_buffer, "get meas hum") == 0) {
+				uint32_t count = 0;
+				struct bme280_pkt meas;
+				while ((RingBuffer_GetPkt(&ring_buffer, &meas)) && (count < ring_buffer.count)) {
+					count++;
+					printf("%.2f\n", meas.hum);
+				}
+			} else if (strcmp(line_buffer, "get meas press") == 0) {
+				uint32_t count = 0;
+				struct bme280_pkt meas;
+				while ((RingBuffer_GetPkt(&ring_buffer, &meas)) && (count < ring_buffer.count)) {
+					count++;
+					printf("%.2f\n", meas.pres / (float) 100.0);
+				}
+			}
+			else {
 				printf("Command not found\n");
 			}
 			memset(line_buffer, '\0', LINE_MAX_LENGTH);
@@ -104,6 +131,9 @@ void line_append() {
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	line_append();
 }
+
+const uint32_t sample_time_meas_ms = 1000UL;
+uint32_t timer_meas = 0UL;
 
 
 /* USER CODE END 0 */
@@ -145,6 +175,7 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim11);
   BME280_Init(&hspi3, BME280_TEMPERATURE_16BIT, BME280_PRESSURE_ULTRALOWPOWER, BME280_HUMINIDITY_STANDARD, BME280_NORMALMODE);
   BME280_SetConfig(BME280_STANDBY_MS_10, BME280_FILTER_OFF);
+  RingBuffer_Init(&ring_buffer, buffer, RINGBUF_SIZE);
 
 
   HAL_UART_Receive_IT(&huart1, &last_received_byte, 1);
@@ -154,6 +185,12 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  if (HAL_GetTick() - timer_meas >= sample_time_meas_ms) {
+		  struct bme280_pkt tmp;
+		  BME280_ReadTemperatureAndPressureAndHuminidity(&tmp.temp, &tmp.pres, &tmp.hum);
+		  RingBuffer_PutPkt(&ring_buffer, tmp);
+		  timer_meas = HAL_GetTick();
+	  }
 
     /* USER CODE END WHILE */
 
