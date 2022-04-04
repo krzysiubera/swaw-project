@@ -28,9 +28,8 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 #include "delays.h"
-#include "ring_buffer.h"
-#include "cli.h"
 #include "bme280.h"
 /* USER CODE END Includes */
 
@@ -45,73 +44,62 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define RINGBUF_SIZE 180
+
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-RingBuffer ringbuf;
-struct bme280_pkt buffer[RINGBUF_SIZE];
-bool print_enable = false;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-void GetTemp(void);
-void GetHum(void);
-void GetPress(void);
-void GetAll(void);
-void GetAvgTemp(void);
-void GetAvgHum(void);
-void GetAvgPress(void);
-void GetAvgAll(void);
-void GetAllContinuous(void);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-	struct bme280_pkt tmp;
-		if (htim->Instance == TIM11) {
-			BME280_ReadTemperatureAndPressureAndHuminidity(&tmp.temp, &tmp.pres, &tmp.hum);
-			RingBuffer_PutPkt(&ringbuf, tmp);
+int __io_putchar(int ch) {
+	if (ch == '\n') {
+		uint8_t ch2 = '\r';
+		HAL_UART_Transmit(&huart1, &ch2, 1, HAL_MAX_DELAY);
+	}
+	HAL_UART_Transmit(&huart1, (uint8_t *) &ch, 1, HAL_MAX_DELAY);
+	return 1;
+}
 
-			if (print_enable) {
-				printf("\r\nTemp: %.2f deg C, Hum: %.2f%%, Press: %.2f hPa", tmp.temp, tmp.hum, tmp.pres/((float)100.00));
+#define LINE_MAX_LENGTH 80
+static char line_buffer[LINE_MAX_LENGTH + 1];
+static uint32_t line_length;
+
+void line_append(uint8_t value) {
+	if (value == '\r' || value == '\n') {
+		if (line_length > 0) {
+			line_buffer[line_length] = '\0';
+
+			if (strcmp(line_buffer, "get temp") == 0) {
+				printf("Temperature : %.2f deg C\n", BME280_ReadTemperature());
+			} else if (strcmp(line_buffer, "get press") == 0) {
+				printf("Pressure: %2f hPa\n", BME280_ReadPressure() / (float) 100.0);
+			} else if (strcmp(line_buffer, "get hum") == 0) {
+				printf("Humidity: %2f %%\n", BME280_ReadHuminidity());
+			} else {
+				printf("Command not found\n");
 			}
+			memset(line_buffer, '\0', LINE_MAX_LENGTH);
+			line_length = 0;
 		}
-}
-
-//cli commands
-cli_command cli_commands[] = {
-	{ .command = "\\get cont all", .callback = GetAllContinuous},
-	{ .command = "\\get temp", .callback = GetTemp},
-	{ .command = "\\get hum", .callback = GetHum},
-	{ .command = "\\get press", .callback = GetPress},
-	{ .command = "\\get all", .callback = GetAll},
-	{ .command = "\\get avg temp", .callback = GetAvgTemp},
-	{ .command = "\\get avg hum", .callback = GetAvgHum},
-	{ .command = "\\get avg press", .callback = GetAvgPress},
-	{ .command = "\\get avg all", .callback = GetAvgAll},
-	CLI_CMD_LIST_END
-};
-
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)//byte received callback
-{
-	if(!print_enable)
-	{
-		CLI_Byte_Received_Callback(huart); //CLI callback
-	}
-	else if(print_enable)
-	{
-		print_enable = false;
-		CLI_Init(&huart1, cli_commands);
-		printf("\r\n");
+	} else {
+		if (line_length >= LINE_MAX_LENGTH) {
+			line_length = 0;
+		}
+		line_buffer[line_length++] = value;
 	}
 }
+
+
 /* USER CODE END 0 */
 
 /**
@@ -151,16 +139,16 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim11);
   BME280_Init(&hspi3, BME280_TEMPERATURE_16BIT, BME280_PRESSURE_ULTRALOWPOWER, BME280_HUMINIDITY_STANDARD, BME280_NORMALMODE);
   BME280_SetConfig(BME280_STANDBY_MS_10, BME280_FILTER_OFF);
-    if (RingBuffer_Init(&ringbuf, buffer, RINGBUF_SIZE) == false)
-  	  return -1;
-    CLI_Init(&huart1, cli_commands); // initialization of CLI using UART2
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
+	  uint8_t value;
+	  if (HAL_UART_Receive(&huart1, &value, 1, 0) == HAL_OK) {
+		  line_append(value);
+	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -213,95 +201,7 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-void GetTemp(void)
-{
-	float Temperature;
-	Temperature = BME280_ReadTemperature();
-	printf("\r\nTemperature: %.2f deg C\r\n", Temperature);
-}
-void GetHum(void)
-{
-	float Humidity;
-	Humidity = BME280_ReadHuminidity();
-	printf("\r\nHumidity: %.2f%%\r\n", Humidity);
-}
-void GetPress(void)
-{
-	uint32_t Pressure;
-	Pressure = BME280_ReadPressure();
-	printf("\r\nPressure: %.2f hPa\r\n", Pressure/(float) 100.0);
-}
-void GetAll(void)
-{
-	struct bme280_pkt meas;
-	BME280_ReadTemperatureAndPressureAndHuminidity(&meas.temp, &meas.pres, &meas.hum);
-	printf("\r\nTemp: %.2f deg C, Hum: %.2f%%, Press: %.2f hPa\r\n", meas.temp, meas.hum, meas.pres/(float) 100.0);
 
-}
-void GetAvgTemp(void)
-{
-	struct bme280_pkt meas;
-	uint16_t count = 0;
-	float Temperature = 0.0;
-
-	while((RingBuffer_GetPkt(&ringbuf, &meas)) && (count < ringbuf.count))
-	{
-		count++;
-		Temperature += meas.temp;
-	}
-
-	printf("\r\nAvg. Temperature: %.2f deg C\r\n", Temperature/count);
-}
-void GetAvgHum(void)
-{
-	struct bme280_pkt meas;
-	uint16_t count = 0;
-	float Humidity = 0.0;
-	//__disable_irq();
-	while((RingBuffer_GetPkt(&ringbuf, &meas)) && (count < ringbuf.count))
-	{
-		count++;
-		Humidity += meas.hum;
-	}
-	//__enable_irq();
-	printf("\r\nAvg. Humidity: %.2f%%\r\n", Humidity/count);
-}
-void GetAvgPress(void)
-{
-	struct bme280_pkt meas;
-	uint16_t count = 0;
-	uint32_t Pressure = 0.0;
-
-	while((RingBuffer_GetPkt(&ringbuf, &meas)) && (count < ringbuf.count))
-	{
-		count++;
-		Pressure += meas.pres;
-	}
-
-	printf("\r\nAvg. Pressure: %.2f hPa\r\n", Pressure/(((float) 100.0)*count));
-}
-void GetAvgAll(void)
-{
-	struct bme280_pkt meas;
-	uint16_t count = 0;
-	uint32_t Pressure = 0.0;
-	float Humidity = 0.0;
-	float Temperature = 0.0;
-
-	while((RingBuffer_GetPkt(&ringbuf, &meas)) && (count < ringbuf.count))
-	{
-			count++;
-			Pressure += meas.pres;
-			Humidity += meas.hum;
-			Temperature += meas.temp;
-	}
-
-	printf("\r\nTemp: %.2f deg C, Hum: %.2f%%, Press: %.2f hPa\r\n", Temperature/count, Humidity/count, Pressure/(((float) 100.0)*count));
-}
-void GetAllContinuous(void)
-{
-	print_enable = true;
-}
 /* USER CODE END 4 */
 
 /**
