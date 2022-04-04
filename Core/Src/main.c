@@ -73,18 +73,19 @@ int __io_putchar(int ch) {
 #define LINE_MAX_LENGTH 80
 static char line_buffer[LINE_MAX_LENGTH + 1];
 static uint32_t line_length;
+uint8_t last_received_byte;
 
-void line_append(uint8_t value) {
-	if (value == '\r' || value == '\n') {
+void line_append() {
+	if (last_received_byte == '\r' || last_received_byte == '\n') {
 		if (line_length > 0) {
 			line_buffer[line_length] = '\0';
 
 			if (strcmp(line_buffer, "get temp") == 0) {
 				printf("Temperature : %.2f deg C\n", BME280_ReadTemperature());
 			} else if (strcmp(line_buffer, "get press") == 0) {
-				printf("Pressure: %2f hPa\n", BME280_ReadPressure() / (float) 100.0);
+				printf("Pressure: %.2f hPa\n", BME280_ReadPressure() / (float) 100.0);
 			} else if (strcmp(line_buffer, "get hum") == 0) {
-				printf("Humidity: %2f %%\n", BME280_ReadHuminidity());
+				printf("Humidity: %.2f %%\n", BME280_ReadHuminidity());
 			} else {
 				printf("Command not found\n");
 			}
@@ -95,8 +96,13 @@ void line_append(uint8_t value) {
 		if (line_length >= LINE_MAX_LENGTH) {
 			line_length = 0;
 		}
-		line_buffer[line_length++] = value;
+		line_buffer[line_length++] = last_received_byte;
 	}
+	HAL_UART_Receive_IT(&huart1, &last_received_byte, 1);
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+	line_append();
 }
 
 
@@ -139,16 +145,16 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim11);
   BME280_Init(&hspi3, BME280_TEMPERATURE_16BIT, BME280_PRESSURE_ULTRALOWPOWER, BME280_HUMINIDITY_STANDARD, BME280_NORMALMODE);
   BME280_SetConfig(BME280_STANDBY_MS_10, BME280_FILTER_OFF);
+
+
+  HAL_UART_Receive_IT(&huart1, &last_received_byte, 1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  uint8_t value;
-	  if (HAL_UART_Receive(&huart1, &value, 1, 0) == HAL_OK) {
-		  line_append(value);
-	  }
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
