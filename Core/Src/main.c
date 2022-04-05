@@ -71,6 +71,8 @@ int __io_putchar(int ch) {
 	return 1;
 }
 
+BME280 bme_280;
+
 #define RINGBUF_SIZE 180
 RingBuffer ring_buffer;
 struct bme280_pkt buffer[RINGBUF_SIZE];
@@ -86,11 +88,11 @@ void line_append() {
 			line_buffer[line_length] = '\0';
 
 			if (strcmp(line_buffer, "get temp") == 0) {
-				printf("%.2f\n", BME280_ReadTemperature());
+				printf("%.2f\n", BME280_ReadTemperature(&bme_280));
 			} else if (strcmp(line_buffer, "get press") == 0) {
-				printf("%.2f\n", BME280_ReadPressure() / (float) 100.0);
+				printf("%.2f\n", BME280_ReadPressure(&bme_280) / (float) 100.0);
 			} else if (strcmp(line_buffer, "get hum") == 0) {
-				printf("%.2f\n", BME280_ReadHuminidity());
+				printf("%.2f\n", BME280_ReadHuminidity(&bme_280));
 			} else if (strcmp(line_buffer, "get meas temp") == 0) {
 				uint32_t count = 0;
 				struct bme280_pkt meas;
@@ -173,8 +175,12 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start(&htim10);
   HAL_TIM_Base_Start_IT(&htim11);
-  BME280_Init(&hspi3, BME280_TEMPERATURE_16BIT, BME280_PRESSURE_ULTRALOWPOWER, BME280_HUMINIDITY_STANDARD, BME280_NORMALMODE);
-  BME280_SetConfig(BME280_STANDBY_MS_10, BME280_FILTER_OFF);
+
+  BME280_InitHardware(&bme_280, &hspi3, BMP_CS_GPIO_Port, BMP_CS_Pin);
+  BME280_InitChip(&bme_280, BME280_TEMPERATURE_16BIT, BME280_PRESSURE_ULTRALOWPOWER,
+		  BME280_HUMINIDITY_STANDARD, BME280_NORMALMODE);
+  BME280_SetConfig(&bme_280, BME280_STANDBY_MS_10, BME280_FILTER_OFF);
+
   RingBuffer_Init(&ring_buffer, buffer, RINGBUF_SIZE);
 
 
@@ -186,9 +192,9 @@ int main(void)
   while (1)
   {
 	  if (HAL_GetTick() - timer_meas >= sample_time_meas_ms) {
-		  struct bme280_pkt tmp;
-		  BME280_ReadTemperatureAndPressureAndHuminidity(&tmp.temp, &tmp.pres, &tmp.hum);
-		  RingBuffer_PutPkt(&ring_buffer, tmp);
+		  struct bme280_pkt meas;
+		  BME280_ReadTemperatureAndPressureAndHuminidity(&bme_280, &meas.temp, &meas.pres, &meas.hum);
+		  RingBuffer_PutPkt(&ring_buffer, meas);
 		  timer_meas = HAL_GetTick();
 	  }
 

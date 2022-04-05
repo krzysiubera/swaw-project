@@ -63,60 +63,28 @@
 #define BME280_SLEEPMODE		0
 #define BME280_FORCEDMODE		1
 #define BME280_NORMALMODE		3
-//
-//	Coeffs registers
-//
-#define	BME280_DIG_T1		0x88
-#define	BME280_DIG_T2		0x8A
-#define	BME280_DIG_T3		0x8C
 
-#define	BME280_DIG_P1		0x8E
-#define	BME280_DIG_P2		0x90
-#define	BME280_DIG_P3		0x92
-#define	BME280_DIG_P4		0x94
-#define	BME280_DIG_P5		0x96
-#define	BME280_DIG_P6		0x98
-#define	BME280_DIG_P7		0x9A
-#define	BME280_DIG_P8		0x9C
-#define	BME280_DIG_P9		0x9E
+typedef struct {
+	SPI_HandleTypeDef* spi_handler;
+	GPIO_TypeDef* cs_port;
+	uint16_t cs_pin;
+} BME280;
 
-#define	BME280_DIG_H1		0xA1
-#define	BME280_DIG_H2		0xE1
-#define	BME280_DIG_H3		0xE3
-#define	BME280_DIG_H4		0xE4
-#define	BME280_DIG_H5		0xE5
-#define	BME280_DIG_H6		0xE7
-
-//
-//	Registers
-//
-#define	BME280_CHIPID			0xD0
-#define	BME280_VERSION			0xD1
-#define	BME280_SOFTRESET		0xE0
-#define	BME280_CAL26			0xE1  // R calibration stored in 0xE1-0xF0
-#define	BME280_HUM_CONTROL		0xF2
-#define	BME280_STATUS			0xF3
-#define	BME280_CONTROL			0xF4
-#define	BME280_CONFIG			0xF5
-#define	BME280_PRESSUREDATA		0xF7
-#define	BME280_TEMPDATA			0xFA
-#define	BME280_HUMIDDATA		0xFD
-
-//
-//	Control bits
-//
-#define	BME280_MEASURING			(1<<3) // Conversion in progress
 
 //
 // User functions
 //
-void BME280_Init(SPI_HandleTypeDef *spi_handler, uint8_t temperature_resolution, uint8_t pressure_oversampling, uint8_t huminidity_oversampling, uint8_t mode);
-void BME280_SetConfig(uint8_t standby_time, uint8_t filter);
+void BME280_InitHardware(BME280* bme_280, SPI_HandleTypeDef* spi_handler,
+		GPIO_TypeDef* cs_port, uint16_t cs_pin);
+void BME280_InitChip(BME280 *bme280, uint8_t temperature_resolution,
+		uint8_t pressure_oversampling, uint8_t huminidity_oversampling, uint8_t mode);
+void BME280_SetConfig(BME280* bme_280, uint8_t standby_time, uint8_t filter);
 
-float BME280_ReadTemperature(void);
-int32_t BME280_ReadPressure(void);
-float BME280_ReadHuminidity(void);
-uint8_t BME280_ReadTemperatureAndPressureAndHuminidity(float *temperature, int32_t *pressure, float *huminidity);
-float BME280_ReadAltitude(float sea_level_pa);
+float BME280_ReadTemperature(BME280* bme_280);
+int32_t BME280_ReadPressure(BME280* bme_280);
+float BME280_ReadHuminidity(BME280* bme_280);
+uint8_t BME280_ReadTemperatureAndPressureAndHuminidity(BME280* bme_280, float *temperature,
+		int32_t *pressure, float *huminidity);
+float BME280_ReadAltitude(BME280* bme_280, float sea_level_pa);
 
 #endif /* BME280_H */
