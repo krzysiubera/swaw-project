@@ -64,9 +64,14 @@ void SystemClock_Config(void);
 
 BME280 bme_280;
 
-#define RINGBUF_SIZE 180
-RingBuffer ring_buffer;
-struct bme280_pkt buffer[RINGBUF_SIZE];
+#define RINGBUF_SIZE 20
+RingBuffer rb_temperature;
+RingBuffer rb_pressure;
+RingBuffer rb_humidity;
+
+float temperature_buffer[RINGBUF_SIZE];
+float pressure_buffer[RINGBUF_SIZE];
+float humidity_buffer[RINGBUF_SIZE];
 
 #define LINE_MAX_LENGTH 80
 static char line_buffer[LINE_MAX_LENGTH + 1];
@@ -85,28 +90,21 @@ void line_append() {
 			} else if (strcmp(line_buffer, "get hum") == 0) {
 				printf("%.2f\n", BME280_ReadHuminidity(&bme_280));
 			} else if (strcmp(line_buffer, "get meas temp") == 0) {
-				uint32_t count = 0;
-				struct bme280_pkt meas;
-				while ((RingBuffer_GetPkt(&ring_buffer, &meas)) && (count < ring_buffer.count)) {
-					count++;
-					printf("%.2f\n", meas.temp);
+				float temperature;
+				while (RingBuffer_GetFloat(&rb_temperature, &temperature)) {
+					printf("%.2f\n", temperature);
 				}
 			} else if (strcmp(line_buffer, "get meas hum") == 0) {
-				uint32_t count = 0;
-				struct bme280_pkt meas;
-				while ((RingBuffer_GetPkt(&ring_buffer, &meas)) && (count < ring_buffer.count)) {
-					count++;
-					printf("%.2f\n", meas.hum);
+				float humidity;
+				while (RingBuffer_GetFloat(&rb_humidity, &humidity)) {
+					printf("%.2f\n", humidity);
 				}
 			} else if (strcmp(line_buffer, "get meas press") == 0) {
-				uint32_t count = 0;
-				struct bme280_pkt meas;
-				while ((RingBuffer_GetPkt(&ring_buffer, &meas)) && (count < ring_buffer.count)) {
-					count++;
-					printf("%.2f\n", meas.pres / (float) 100.0);
+				float pressure;
+				while (RingBuffer_GetFloat(&rb_pressure, &pressure)) {
+					printf("%.2f\n", pressure);
 				}
-			}
-			else {
+			} else {
 				printf("Command not found\n");
 			}
 			memset(line_buffer, '\0', LINE_MAX_LENGTH);
@@ -172,8 +170,9 @@ int main(void)
 		  BME280_HUMINIDITY_STANDARD, BME280_NORMALMODE);
   BME280_SetConfig(&bme_280, BME280_STANDBY_MS_10, BME280_FILTER_OFF);
 
-  RingBuffer_Init(&ring_buffer, buffer, RINGBUF_SIZE);
-
+  RingBuffer_Init(&rb_temperature, temperature_buffer, RINGBUF_SIZE);
+  RingBuffer_Init(&rb_pressure, pressure_buffer, RINGBUF_SIZE);
+  RingBuffer_Init(&rb_humidity, humidity_buffer, RINGBUF_SIZE);
 
   HAL_UART_Receive_IT(&huart1, &last_received_byte, 1);
   /* USER CODE END 2 */
@@ -183,9 +182,13 @@ int main(void)
   while (1)
   {
 	  if (HAL_GetTick() - timer_meas >= sample_time_meas_ms) {
-		  struct bme280_pkt meas;
-		  BME280_ReadTemperatureAndPressureAndHuminidity(&bme_280, &meas.temp, &meas.pres, &meas.hum);
-		  RingBuffer_PutPkt(&ring_buffer, meas);
+		  float temperature;
+		  int32_t pressure;
+		  float humidity;
+		  BME280_ReadTemperatureAndPressureAndHuminidity(&bme_280, &temperature, &pressure, &humidity);
+		  RingBuffer_PutFloat(&rb_temperature, temperature);
+		  RingBuffer_PutFloat(&rb_pressure, pressure / (float) 100.0);
+		  RingBuffer_PutFloat(&rb_humidity, humidity);
 		  timer_meas = HAL_GetTick();
 	  }
 

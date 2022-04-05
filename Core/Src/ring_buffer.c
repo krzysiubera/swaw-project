@@ -2,107 +2,111 @@
 #include "ring_buffer.h"
 
 
-bool RingBuffer_Init(RingBuffer *ringBuffer, struct bme280_pkt *dataBuffer, size_t dataBufferSize)
+bool RingBuffer_Init(RingBuffer *ringBuffer, float *dataBuffer, size_t dataBufferSize)
 {
 	if ((ringBuffer) && (dataBuffer) && (dataBufferSize > 0)) {
-		*ringBuffer = (RingBuffer) {
-			.buf = dataBuffer,
-			.head = dataBuffer,
-			.tail = dataBuffer,
-			.cap = dataBufferSize
-		};
-		RingBuffer_Clear(ringBuffer);
-		return true;
+	    // set all parameters to default values or values we got as parameters of function
+	    ringBuffer->data = dataBuffer;
+	    ringBuffer->head = 0;
+	    ringBuffer->tail = 0;
+	    ringBuffer->capacity = dataBufferSize;
+	    ringBuffer->countElements = 0;
+	    return true;
 	}
+
 	return false;
 }
 
 bool RingBuffer_Clear(RingBuffer *ringBuffer)
 {
 	if (ringBuffer) {
-		memset(ringBuffer->buf, 0, sizeof(struct bme280_pkt) * ringBuffer->cap);
-		ringBuffer->count = 0;
-		return true;
+	    // set appropriate values to default
+	    ringBuffer->head = 0;
+	    ringBuffer->tail = 0;
+	    ringBuffer->countElements = 0;
+
+	    return true;
 	}
 	return false;
 }
 
 bool RingBuffer_IsEmpty(const RingBuffer *ringBuffer)
 {
-	if (ringBuffer->count == 0)
-		return true;
-	return false;
+	if (ringBuffer->countElements == 0)
+	    return true;
+	else
+	    return false;
 }
 
 size_t RingBuffer_GetLen(const RingBuffer *ringBuffer)
 {
 	if (ringBuffer) {
-		return ringBuffer->count;
+
+		return (ringBuffer->countElements);
+
 	}
 	return 0;
+
 }
 
 size_t RingBuffer_GetCapacity(const RingBuffer *ringBuffer)
 {
 	if (ringBuffer) {
-		return ringBuffer->cap;
+		return ringBuffer->capacity;
 	}
 	return 0;
 }
 
 
-bool RingBuffer_PutPkt(RingBuffer *ringBuffer, struct bme280_pkt data)
+bool RingBuffer_PutFloat(RingBuffer *ringBuffer, float val)
 {
 	if (ringBuffer) {
-		if (ringBuffer->head < ringBuffer->buf + ringBuffer->cap)
+
+		// we check if buffer is full
+		if ((ringBuffer->countElements) == (ringBuffer->capacity))
 		{
-			*ringBuffer->head++ = data;
+		    // cannot put char if buffer is full
+		    return false;
 		}
-		else
-		{
-			ringBuffer->head = ringBuffer->buf;
-			*ringBuffer->head = data;
-		}
-		if(ringBuffer->count < ringBuffer->cap)
-		{
-			ringBuffer->count++;
-		}
-		return true;
+
+
+		// add item to location
+	    ringBuffer->data[ringBuffer->head] = val;
+
+	    // adjust head location by one
+	    ringBuffer->head = (ringBuffer->head + sizeof(float)) % (ringBuffer->capacity);
+
+	    // increase number of elements in buffer
+	    (ringBuffer->countElements)++;
+	    return true;
+
 	}
 	return false;
 }
 
-bool RingBuffer_GetPkt(RingBuffer *ringBuffer, struct bme280_pkt *data)
+bool RingBuffer_GetFloat(RingBuffer *ringBuffer, float *val)
 {
-	if ((ringBuffer) && (data)) {
-		if (!RingBuffer_IsEmpty(ringBuffer))
+  if ((ringBuffer) && (val)) {
+
+		// we check if buffer is empty
+		if (RingBuffer_IsEmpty(ringBuffer))
 		{
-			if(ringBuffer->count < ringBuffer->cap)
-			{
-				if (ringBuffer->tail < ringBuffer->buf + ringBuffer->count)
-				{
-					*data = *ringBuffer->tail++;
-				}
-				else
-				{
-					ringBuffer->tail = ringBuffer->buf;
-					*data = *ringBuffer->tail;
-				}
-			}
-			else
-			{
-				if (ringBuffer->tail < ringBuffer->buf + ringBuffer->cap)
-				{
-					*data = *ringBuffer->tail++;
-				}
-				else
-				{
-					ringBuffer->tail = ringBuffer->buf;
-					*data = *ringBuffer->tail;
-				}
-			}
-	    	return true;
+		    // cannot get char from empty buffer
+		    return false;
 		}
+
+		// get item from data buffer
+		*val = ringBuffer->data[ringBuffer->tail];
+
+		// adjust tail position
+		ringBuffer->tail = (ringBuffer->tail + sizeof(float)) % (ringBuffer->capacity);
+
+		// decrease number of elements in buffer
+		(ringBuffer->countElements)--;
+
+		return true;
+
 	}
+
 	return false;
 }

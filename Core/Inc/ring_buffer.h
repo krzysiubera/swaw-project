@@ -4,17 +4,15 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include <string.h>
-
-struct bme280_pkt {
-	float temp, hum;
-	int32_t pres;
-};
 
 /** Structure describing the ring buffer. */
 typedef struct {
-	struct bme280_pkt *buf, *head, *tail;
-	size_t count, cap;
+	/// Compose your structure here!
+	float* data;             // pointer to an array containing data we hold
+	int head;               // index of head
+	int tail;               // index of tail
+	size_t capacity;        // how many items can be held in an array
+	int countElements;      // how many items are currently in array
 } RingBuffer;
 
 
@@ -26,9 +24,9 @@ typedef struct {
  * @param dataBufferSize size in bytes of the dataBuffer
  * @return true if all arguments are valid and the ring buffer is initialized successfully, false otherwise
 */
-bool RingBuffer_Init(RingBuffer *ringBuffer, struct bme280_pkt *dataBuffer, size_t dataBufferSize);
+bool RingBuffer_Init(RingBuffer *ringBuffer, float *dataBuffer, size_t dataBufferSize);
 
-/*
+/**
  * Clears contents of the given ring buffer.
  *
  * @param ringBuffer pointer to a \ref RingBuffer structure
@@ -45,10 +43,7 @@ bool RingBuffer_Clear(RingBuffer *ringBuffer);
 bool RingBuffer_IsEmpty(const RingBuffer *ringBuffer);
 
 /**
- * Gets the length (in bytes) of th
- * ,
- *
- * e data stored in the given ring buffer.
+ * Gets the length (in bytes) of the data stored in the given ring buffer.
  *
  * @param ringBuffer pointer to a \ref RingBuffer structure
  * @return length (in bytes) of the data stored in the ring buffer
@@ -70,7 +65,7 @@ size_t RingBuffer_GetCapacity(const RingBuffer *ringBuffer);
  * @param ringBuffer pointer to a \ref RingBuffer structure
  * @return true if the character was added successfully, false otherwise
 */
-bool RingBuffer_PutPkt(RingBuffer *ringBuffer, struct bme280_pkt data);
+bool RingBuffer_PutFloat(RingBuffer *ringBuffer, float val);
 
 /**
  * Pulls out a single character from the ring buffer. The stored data length will be
@@ -79,7 +74,7 @@ bool RingBuffer_PutPkt(RingBuffer *ringBuffer, struct bme280_pkt data);
  * @param ringBuffer pointer to a \ref RingBuffer structure
  * @return true if the character was pulled out successfully, false otherwise
 */
-bool RingBuffer_GetPkt(RingBuffer *ringBuffer, struct bme280_pkt *data);
+bool RingBuffer_GetFloat(RingBuffer *ringBuffer, float *val);
 
 
 #endif //_RING_BUFFER_

@@ -15,9 +15,9 @@ print(f"Humidity: {uart_handler.read_last_data()} %")
 uart_handler.send_command("get meas temp")
 print("Temperature measurement: ")
 for idx in range(180):
-    print(uart_handler.read_last_data(), end=" ")
+    res = uart_handler.read_last_data()
+    print(res, end=" ")
 print()
-
 
 uart_handler.send_command("get meas hum")
 print("Humidity measurement: ")
