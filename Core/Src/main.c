@@ -26,12 +26,11 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
-#include "delays.h"
 #include "bme280.h"
 #include "ring_buffer.h"
+#include "printf_to_uart.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -62,14 +61,6 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-int __io_putchar(int ch) {
-	if (ch == '\n') {
-		uint8_t ch2 = '\r';
-		HAL_UART_Transmit(&huart1, &ch2, 1, HAL_MAX_DELAY);
-	}
-	HAL_UART_Transmit(&huart1, (uint8_t *) &ch, 1, HAL_MAX_DELAY);
-	return 1;
-}
 
 BME280 bme_280;
 
