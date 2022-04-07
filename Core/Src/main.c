@@ -94,16 +94,19 @@ void line_append() {
 				while (RingBuffer_GetFloat(&rb_temperature, &temperature)) {
 					printf("%.2f\n", temperature);
 				}
+				printf("End buffer\n");
 			} else if (strcmp(line_buffer, "get meas hum") == 0) {
 				float humidity;
 				while (RingBuffer_GetFloat(&rb_humidity, &humidity)) {
 					printf("%.2f\n", humidity);
 				}
+				printf("End buffer\n");
 			} else if (strcmp(line_buffer, "get meas press") == 0) {
 				float pressure;
 				while (RingBuffer_GetFloat(&rb_pressure, &pressure)) {
 					printf("%.2f\n", pressure);
 				}
+				printf("End buffer\n");
 			} else {
 				printf("Command not found\n");
 			}
