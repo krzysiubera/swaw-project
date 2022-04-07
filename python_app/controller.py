@@ -1,32 +1,37 @@
-from uart_handler import UartHandler
 from app_gui import AppGui
+from model import Model
 
 
 class Controller:
-    """ Class responsible for performing requests """
+    """ Class responsible for handling requests from GUI """
 
-    def __init__(self, view: AppGui):
+    def __init__(self, view: AppGui, model: Model):
         """
         Set reference to GUI class and init UART connection
         :param view: reference to the GUI of the application
+        :param model: reference to the model of the application
         """
-        self.view = view
-        self.uart_handler = UartHandler()
+        self.model: Model = model
+        self.view: AppGui = view
+        self.connect_signals()
+
+    def connect_signals(self):
+        """ Connect signals from buttons with their slots """
+        self.view.temperature_button.clicked.connect(self.handle_request_temperature)
+        self.view.humidity_button.clicked.connect(self.handle_request_humidity)
+        self.view.pressure_button.clicked.connect(self.handle_request_pressure)
 
     def handle_request_temperature(self):
         """ Action performed when requesting last temperature measurement """
-        self.uart_handler.send_command("get temp")
-        result = self.uart_handler.read_last_data()
+        result: str = self.model.get_last_temperature()
         self.view.temperature_label.setText(f"{result} deg C")
 
     def handle_request_humidity(self):
         """ Action performed when requesting last humidity measurement """
-        self.uart_handler.send_command("get hum")
-        result = self.uart_handler.read_last_data()
+        result: str = self.model.get_last_humidity()
         self.view.humidity_label.setText(f"{result} %")
 
     def handle_request_pressure(self):
         """ Action performed when requesting last pressure measurement """
-        self.uart_handler.send_command("get press")
-        result = self.uart_handler.read_last_data()
+        result: str = self.model.get_last_pressure()
         self.view.pressure_label.setText(f"{result} hPa")

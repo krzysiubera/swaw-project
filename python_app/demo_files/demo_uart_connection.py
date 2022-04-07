@@ -13,22 +13,19 @@ uart_handler.send_command("get hum")
 print(f"Humidity: {uart_handler.read_last_data()} %")
 
 uart_handler.send_command("get meas temp")
-print("Temperature measurement: ")
-for idx in range(180):
-    res = uart_handler.read_last_data()
-    print(res, end=" ")
-print()
+MAX_NUM_MEAS = 180
+collected_meas_num = 0
+measurements = []
 
-uart_handler.send_command("get meas hum")
-print("Humidity measurement: ")
-for idx in range(180):
-    print(uart_handler.read_last_data(), end=" ")
-print()
+while collected_meas_num < MAX_NUM_MEAS:
+    received_msg = uart_handler.read_last_data()
+    print(received_msg, end=" ")
+    if received_msg == "End buffer":
+        break
+    measurements.append(received_msg)
+    collected_meas_num = collected_meas_num + 1
 
-uart_handler.send_command("get meas press")
-print("Pressure measurement: ")
-for idx in range(180):
-    print(uart_handler.read_last_data(), end=" ")
-print()
+print(f"Num meas: {len(measurements)}")
+
 
 
