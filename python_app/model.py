@@ -1,3 +1,5 @@
+import numpy as np
+
 from uart_handler import UartHandler
 
 
@@ -18,7 +20,16 @@ class Model:
         self.uart_handler.send_command("get hum")
         return self.uart_handler.read_last_data()
 
-    def get_last_pressure(self):
+    def get_last_pressure(self) -> str:
         """ Get last pressure from UART """
         self.uart_handler.send_command("get press")
         return self.uart_handler.read_last_data()
+
+    def get_temperature_values(self) -> np.ndarray:
+        pass
+
+    def get_pressure_values(self) -> np.ndarray:
+        pass
+
+    def get_humidity_values(self) -> np.ndarray:
+        pass

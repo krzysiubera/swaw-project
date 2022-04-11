@@ -17,8 +17,17 @@ class AppGui(QtWidgets.QMainWindow):
         self.pressure_button: QtWidgets.QPushButton = self.findChild(QtWidgets.QPushButton, 'pressure_button')
         self.pressure_label: QtWidgets.QLabel = self.findChild(QtWidgets.QLabel, 'pressure_label')
 
-        # demo for pyqtgraph - to be removed
-        self.graph = self.findChild(pyqtgraph.PlotWidget, 'graph_widget')
-        x_axis = [x for x in range(10)]
-        y_axis = [1 for _ in range(10)]
-        self.graph.plot(x_axis, y_axis)
+        # self.graph.plot(x_axis, y_axis)
+        self.temperature_plot: pyqtgraph.PlotWidget = self.findChild(pyqtgraph.PlotWidget, 'temperature_plot')
+        self.humidity_plot: pyqtgraph.PlotWidget = self.findChild(pyqtgraph.PlotWidget, 'humidity_plot')
+        self.pressure_plot: pyqtgraph.PlotWidget = self.findChild(pyqtgraph.PlotWidget, 'pressure_plot')
+        self.temperature_plot.showGrid(x=True, y=True, alpha=0.5)
+        self.humidity_plot.showGrid(x=True, y=True, alpha=0.5)
+        self.pressure_plot.showGrid(x=True, y=True, alpha=0.5)
+
+        self.temperature_plot_button: QtWidgets.QPushButton = self.findChild(QtWidgets.QPushButton,
+                                                                             'temperature_plot_button')
+        self.humidity_plot_button: QtWidgets.QPushButton = self.findChild(QtWidgets.QPushButton,
+                                                                          'humidity_plot_button')
+        self.pressure_plot_button: QtWidgets.QPushButton = self.findChild(QtWidgets.QPushButton,
+                                                                          'pressure_plot_button')

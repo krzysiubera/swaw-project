@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1120</width>
-    <height>683</height>
+    <width>1113</width>
+    <height>848</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -101,7 +101,7 @@
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
-   <widget class="PlotWidget" name="graph_widget" native="true">
+   <widget class="PlotWidget" name="temperature_plot" native="true">
     <property name="geometry">
      <rect>
       <x>590</x>
@@ -111,13 +111,72 @@
      </rect>
     </property>
    </widget>
+   <widget class="PlotWidget" name="humidity_plot" native="true">
+    <property name="geometry">
+     <rect>
+      <x>590</x>
+      <y>280</y>
+      <width>431</width>
+      <height>251</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="PlotWidget" name="pressure_plot" native="true">
+    <property name="geometry">
+     <rect>
+      <x>590</x>
+      <y>550</y>
+      <width>431</width>
+      <height>251</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="temperature_plot_button">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>270</y>
+      <width>221</width>
+      <height>81</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>TemperaturePlot</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="humidity_plot_button">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>360</y>
+      <width>221</width>
+      <height>81</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>HumidityPlot</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pressure_plot_button">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>460</y>
+      <width>221</width>
+      <height>81</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>PressurePlot</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1120</width>
+     <width>1113</width>
      <height>26</height>
     </rect>
    </property>
