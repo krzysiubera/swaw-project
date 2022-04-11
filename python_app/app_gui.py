@@ -8,7 +8,7 @@ class AppGui(QtWidgets.QMainWindow):
     def __init__(self):
         """ Init GUI application and create elements on the screen """
         super().__init__()
-        uic.loadUi('app_gui.ui', self)
+        uic.loadUi('designer/app_gui.ui', self)
 
         self.temperature_button: QtWidgets.QPushButton = self.findChild(QtWidgets.QPushButton, 'temperature_button')
         self.temperature_label: QtWidgets.QLabel = self.findChild(QtWidgets.QLabel, 'temperature_label')
@@ -17,7 +17,6 @@ class AppGui(QtWidgets.QMainWindow):
         self.pressure_button: QtWidgets.QPushButton = self.findChild(QtWidgets.QPushButton, 'pressure_button')
         self.pressure_label: QtWidgets.QLabel = self.findChild(QtWidgets.QLabel, 'pressure_label')
 
-        # self.graph.plot(x_axis, y_axis)
         self.temperature_plot: pyqtgraph.PlotWidget = self.findChild(pyqtgraph.PlotWidget, 'temperature_plot')
         self.humidity_plot: pyqtgraph.PlotWidget = self.findChild(pyqtgraph.PlotWidget, 'humidity_plot')
         self.pressure_plot: pyqtgraph.PlotWidget = self.findChild(pyqtgraph.PlotWidget, 'pressure_plot')
