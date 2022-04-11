@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1113</width>
+    <width>1199</width>
     <height>848</height>
    </rect>
   </property>
@@ -14,161 +14,199 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPushButton" name="temperature_button">
+   <widget class="QTabWidget" name="SettingsTab">
     <property name="geometry">
      <rect>
-      <x>0</x>
-      <y>0</y>
-      <width>221</width>
-      <height>81</height>
+      <x>20</x>
+      <y>30</y>
+      <width>1181</width>
+      <height>781</height>
      </rect>
     </property>
-    <property name="text">
-     <string>GetLastTemperature</string>
+    <property name="currentIndex">
+     <number>4</number>
     </property>
-   </widget>
-   <widget class="QLabel" name="temperature_label">
-    <property name="geometry">
-     <rect>
-      <x>230</x>
-      <y>10</y>
-      <width>91</width>
-      <height>71</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>TextLabel</string>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignCenter</set>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="humidity_button">
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>90</y>
-      <width>221</width>
-      <height>81</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>GetLastHumidity</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="humidity_label">
-    <property name="geometry">
-     <rect>
-      <x>230</x>
-      <y>100</y>
-      <width>91</width>
-      <height>71</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>TextLabel</string>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignCenter</set>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="pressure_button">
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>180</y>
-      <width>221</width>
-      <height>81</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>GetLastPressure</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="pressure_label">
-    <property name="geometry">
-     <rect>
-      <x>230</x>
-      <y>190</y>
-      <width>91</width>
-      <height>71</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>TextLabel</string>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignCenter</set>
-    </property>
-   </widget>
-   <widget class="PlotWidget" name="temperature_plot" native="true">
-    <property name="geometry">
-     <rect>
-      <x>590</x>
-      <y>10</y>
-      <width>431</width>
-      <height>251</height>
-     </rect>
-    </property>
-   </widget>
-   <widget class="PlotWidget" name="humidity_plot" native="true">
-    <property name="geometry">
-     <rect>
-      <x>590</x>
-      <y>280</y>
-      <width>431</width>
-      <height>251</height>
-     </rect>
-    </property>
-   </widget>
-   <widget class="PlotWidget" name="pressure_plot" native="true">
-    <property name="geometry">
-     <rect>
-      <x>590</x>
-      <y>550</y>
-      <width>431</width>
-      <height>251</height>
-     </rect>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="temperature_plot_button">
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>270</y>
-      <width>221</width>
-      <height>81</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>TemperaturePlot</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="humidity_plot_button">
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>360</y>
-      <width>221</width>
-      <height>81</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>HumidityPlot</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="pressure_plot_button">
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>460</y>
-      <width>221</width>
-      <height>81</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>PressurePlot</string>
-    </property>
+    <widget class="QWidget" name="tab">
+     <attribute name="title">
+      <string>Last measurements</string>
+     </attribute>
+     <widget class="QPushButton" name="temperature_button">
+      <property name="geometry">
+       <rect>
+        <x>340</x>
+        <y>130</y>
+        <width>221</width>
+        <height>81</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>GetLastTemperature</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="humidity_button">
+      <property name="geometry">
+       <rect>
+        <x>340</x>
+        <y>300</y>
+        <width>221</width>
+        <height>101</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>GetLastHumidity</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pressure_button">
+      <property name="geometry">
+       <rect>
+        <x>340</x>
+        <y>520</y>
+        <width>221</width>
+        <height>81</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>GetLastPressure</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="pressure_label">
+      <property name="geometry">
+       <rect>
+        <x>700</x>
+        <y>520</y>
+        <width>241</width>
+        <height>81</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>TextLabel</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="humidity_label">
+      <property name="geometry">
+       <rect>
+        <x>700</x>
+        <y>310</y>
+        <width>241</width>
+        <height>91</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>TextLabel</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="temperature_label">
+      <property name="geometry">
+       <rect>
+        <x>730</x>
+        <y>130</y>
+        <width>191</width>
+        <height>81</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>TextLabel</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tab_5">
+     <attribute name="title">
+      <string>Temperature plot</string>
+     </attribute>
+     <widget class="QPushButton" name="temperature_plot_button">
+      <property name="geometry">
+       <rect>
+        <x>430</x>
+        <y>560</y>
+        <width>221</width>
+        <height>81</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>TemperaturePlot</string>
+      </property>
+     </widget>
+     <widget class="PlotWidget" name="temperature_plot" native="true">
+      <property name="geometry">
+       <rect>
+        <x>200</x>
+        <y>120</y>
+        <width>661</width>
+        <height>331</height>
+       </rect>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tab_4">
+     <attribute name="title">
+      <string>Humidity plot</string>
+     </attribute>
+     <widget class="QPushButton" name="humidity_plot_button">
+      <property name="geometry">
+       <rect>
+        <x>420</x>
+        <y>600</y>
+        <width>221</width>
+        <height>81</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>HumidityPlot</string>
+      </property>
+     </widget>
+     <widget class="PlotWidget" name="humidity_plot" native="true">
+      <property name="geometry">
+       <rect>
+        <x>240</x>
+        <y>130</y>
+        <width>641</width>
+        <height>331</height>
+       </rect>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tab_3">
+     <attribute name="title">
+      <string>Pressure plot</string>
+     </attribute>
+     <widget class="QPushButton" name="pressure_plot_button">
+      <property name="geometry">
+       <rect>
+        <x>410</x>
+        <y>560</y>
+        <width>221</width>
+        <height>81</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>PressurePlot</string>
+      </property>
+     </widget>
+     <widget class="PlotWidget" name="pressure_plot" native="true">
+      <property name="geometry">
+       <rect>
+        <x>210</x>
+        <y>130</y>
+        <width>641</width>
+        <height>311</height>
+       </rect>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tab_2">
+     <attribute name="title">
+      <string>Settings</string>
+     </attribute>
+    </widget>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -176,7 +214,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1113</width>
+     <width>1199</width>
      <height>26</height>
     </rect>
    </property>
