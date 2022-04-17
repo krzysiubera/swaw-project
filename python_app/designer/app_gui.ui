@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1199</width>
+    <width>1092</width>
     <height>848</height>
    </rect>
   </property>
@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>4</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -39,8 +39,13 @@
         <height>81</height>
        </rect>
       </property>
+      <property name="font">
+       <font>
+        <pointsize>8</pointsize>
+       </font>
+      </property>
       <property name="text">
-       <string>GetLastTemperature</string>
+       <string>Get last temperature</string>
       </property>
      </widget>
      <widget class="QPushButton" name="humidity_button">
@@ -53,7 +58,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>GetLastHumidity</string>
+       <string>Get last humidity</string>
       </property>
      </widget>
      <widget class="QPushButton" name="pressure_button">
@@ -66,7 +71,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>GetLastPressure</string>
+       <string>Get last pressure</string>
       </property>
      </widget>
      <widget class="QLabel" name="pressure_label">
@@ -77,6 +82,11 @@
         <width>241</width>
         <height>81</height>
        </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>20</pointsize>
+       </font>
       </property>
       <property name="text">
        <string>TextLabel</string>
@@ -94,6 +104,11 @@
         <height>91</height>
        </rect>
       </property>
+      <property name="font">
+       <font>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
       <property name="text">
        <string>TextLabel</string>
       </property>
@@ -110,6 +125,11 @@
         <height>81</height>
        </rect>
       </property>
+      <property name="font">
+       <font>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
       <property name="text">
        <string>TextLabel</string>
       </property>
@@ -125,23 +145,23 @@
      <widget class="QPushButton" name="temperature_plot_button">
       <property name="geometry">
        <rect>
-        <x>430</x>
+        <x>480</x>
         <y>560</y>
         <width>221</width>
         <height>81</height>
        </rect>
       </property>
       <property name="text">
-       <string>TemperaturePlot</string>
+       <string>Temperature plot</string>
       </property>
      </widget>
      <widget class="PlotWidget" name="temperature_plot" native="true">
       <property name="geometry">
        <rect>
-        <x>200</x>
-        <y>120</y>
-        <width>661</width>
-        <height>331</height>
+        <x>140</x>
+        <y>30</y>
+        <width>891</width>
+        <height>511</height>
        </rect>
       </property>
      </widget>
@@ -153,23 +173,23 @@
      <widget class="QPushButton" name="humidity_plot_button">
       <property name="geometry">
        <rect>
-        <x>420</x>
+        <x>470</x>
         <y>600</y>
         <width>221</width>
         <height>81</height>
        </rect>
       </property>
       <property name="text">
-       <string>HumidityPlot</string>
+       <string>Humidity plot</string>
       </property>
      </widget>
      <widget class="PlotWidget" name="humidity_plot" native="true">
       <property name="geometry">
        <rect>
-        <x>240</x>
-        <y>130</y>
-        <width>641</width>
-        <height>331</height>
+        <x>130</x>
+        <y>50</y>
+        <width>891</width>
+        <height>501</height>
        </rect>
       </property>
      </widget>
@@ -181,23 +201,23 @@
      <widget class="QPushButton" name="pressure_plot_button">
       <property name="geometry">
        <rect>
-        <x>410</x>
-        <y>560</y>
+        <x>510</x>
+        <y>590</y>
         <width>221</width>
         <height>81</height>
        </rect>
       </property>
       <property name="text">
-       <string>PressurePlot</string>
+       <string>Pressure plot</string>
       </property>
      </widget>
      <widget class="PlotWidget" name="pressure_plot" native="true">
       <property name="geometry">
        <rect>
-        <x>210</x>
-        <y>130</y>
-        <width>641</width>
-        <height>311</height>
+        <x>160</x>
+        <y>60</y>
+        <width>891</width>
+        <height>481</height>
        </rect>
       </property>
      </widget>
@@ -214,7 +234,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1199</width>
+     <width>1092</width>
      <height>26</height>
     </rect>
    </property>

@@ -14,9 +14,8 @@ class Controller:
         """
         self.model: Model = model
         self.view: AppGui = view
-        self.connect_signals()
 
-    def connect_signals(self):
+    def connect_signals_to_slots(self):
         """ Connect signals from buttons with their slots """
         self.view.temperature_button.clicked.connect(self.handle_request_temperature)
         self.view.humidity_button.clicked.connect(self.handle_request_humidity)
@@ -26,36 +25,36 @@ class Controller:
         self.view.pressure_plot_button.clicked.connect(self.handle_pressure_plot)
 
     def handle_request_temperature(self):
-        """ Action performed when requesting last temperature measurement """
+        """ Request last temperature measurement and put result in the 'Temperature label' box """
         result: str = self.model.get_last_temperature()
         self.view.temperature_label.setText(f"{result} deg C")
 
     def handle_request_humidity(self):
-        """ Action performed when requesting last humidity measurement """
+        """ Request last humidity measurement and put result in the 'Humidity label' box """
         result: str = self.model.get_last_humidity()
         self.view.humidity_label.setText(f"{result} %")
 
     def handle_request_pressure(self):
-        """ Action performed when requesting last pressure measurement """
+        """ Request last pressure measurement and put result in the 'Pressure label' box """
         result: str = self.model.get_last_pressure()
         self.view.pressure_label.setText(f"{result} hPa")
 
     def handle_temperature_plot(self):
-        """ Action performed when requesting temperature plot """
+        """ Request temperature measurements from the data buffer and plot it in the 'Temperature plot' widget """
         self.view.temperature_plot.clear()
         y_axis_val = self.model.get_temperature_values()
         x_axis_val = np.array([num for num in range(len(y_axis_val))])
         self.view.temperature_plot.plot(x_axis_val, y_axis_val, pen='r')
 
     def handle_humidity_plot(self):
-        """ Action performed when requesting temperature plot """
+        """ Request humidity measurements from the data buffer and plot it in the 'Humidity plot' widget """
         self.view.humidity_plot.clear()
         y_axis_val = self.model.get_humidity_values()
         x_axis_val = np.array([num for num in range(len(y_axis_val))])
         self.view.humidity_plot.plot(x_axis_val, y_axis_val, pen='g')
 
     def handle_pressure_plot(self):
-        """ Action performed when requesting pressure plot """
+        """ Request humidity measurements from the data buffer and plot it in the 'Pressure plot' widget """
         self.view.pressure_plot.clear()
         y_axis_val = self.model.get_pressure_values()
         x_axis_val = np.array([num for num in range(len(y_axis_val))])

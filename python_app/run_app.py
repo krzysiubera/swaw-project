@@ -10,5 +10,6 @@ if __name__ == '__main__':
     view: AppGui = AppGui()
     model: Model = Model()
     controller = Controller(view, model)
+    controller.connect_signals_to_slots()
     view.show()
     app.exec_()
