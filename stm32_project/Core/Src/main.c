@@ -28,9 +28,12 @@
 /* USER CODE BEGIN Includes */
 #include <stdbool.h>
 #include <string.h>
+#include <stdlib.h>
+
 #include "bme280.h"
 #include "ring_buffer.h"
 #include "printf_to_uart.h"
+#include "utils.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -63,6 +66,9 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN 0 */
 
 BME280 bme_280;
+
+uint32_t sample_time_meas_ms = 1000UL;
+uint32_t timer_meas = 0UL;
 
 #define RINGBUF_SIZE 180
 RingBuffer rb_temperature;
@@ -107,6 +113,16 @@ void line_append() {
 					printf("%.2f\n", pressure);
 				}
 				printf("End buffer\n");
+			} else if (string_starts_with("set sampling rate", line_buffer)) {
+				// extract "set sampling rate part"
+				char* token = strtok(line_buffer, ":");
+
+				// extract the number after ":"
+				token = strtok(NULL, ":");
+
+				// multiplied by 1000 because it needs to be converted to miliseconds
+				uint32_t received_sampling_rate = atoi(token);
+				sample_time_meas_ms = received_sampling_rate * 1000;
 			} else {
 				printf("Command not found\n");
 			}
@@ -125,10 +141,6 @@ void line_append() {
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	line_append();
 }
-
-const uint32_t sample_time_meas_ms = 1000UL;
-uint32_t timer_meas = 0UL;
-
 
 /* USER CODE END 0 */
 
