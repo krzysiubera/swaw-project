@@ -160,8 +160,8 @@
        <rect>
         <x>140</x>
         <y>30</y>
-        <width>891</width>
-        <height>511</height>
+        <width>890</width>
+        <height>510</height>
        </rect>
       </property>
      </widget>
@@ -186,10 +186,10 @@
      <widget class="PlotWidget" name="humidity_plot" native="true">
       <property name="geometry">
        <rect>
-        <x>130</x>
-        <y>50</y>
-        <width>891</width>
-        <height>501</height>
+        <x>140</x>
+        <y>30</y>
+        <width>890</width>
+        <height>510</height>
        </rect>
       </property>
      </widget>
@@ -214,10 +214,10 @@
      <widget class="PlotWidget" name="pressure_plot" native="true">
       <property name="geometry">
        <rect>
-        <x>160</x>
-        <y>60</y>
-        <width>891</width>
-        <height>481</height>
+        <x>140</x>
+        <y>30</y>
+        <width>890</width>
+        <height>510</height>
        </rect>
       </property>
      </widget>
