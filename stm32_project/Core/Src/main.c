@@ -185,6 +185,7 @@ int main(void)
   while (1)
   {
 	  if (HAL_GetTick() - timer_meas >= sample_time_meas_ms) {
+		  timer_meas = HAL_GetTick();
 		  float temperature;
 		  int32_t pressure;
 		  float humidity;
@@ -192,7 +193,6 @@ int main(void)
 		  RingBuffer_PutFloat(&rb_temperature, temperature);
 		  RingBuffer_PutFloat(&rb_pressure, pressure / (float) 100.0);
 		  RingBuffer_PutFloat(&rb_humidity, humidity);
-		  timer_meas = HAL_GetTick();
 	  }
 
     /* USER CODE END WHILE */
