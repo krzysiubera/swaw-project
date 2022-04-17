@@ -64,7 +64,7 @@ void SystemClock_Config(void);
 
 BME280 bme_280;
 
-#define RINGBUF_SIZE 20
+#define RINGBUF_SIZE 180
 RingBuffer rb_temperature;
 RingBuffer rb_pressure;
 RingBuffer rb_humidity;

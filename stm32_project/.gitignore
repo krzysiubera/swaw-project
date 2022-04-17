@@ -65,5 +65,4 @@ ctrlp.root
 
 #html
 *.html
-/Debug/
-/python_app/venv/Lib/site-packages/qt5_applications/Qt/bin/designer.exe
+Debug/
