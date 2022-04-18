@@ -54,6 +54,13 @@ class Model:
             collected_meas_num = collected_meas_num + 1
         return measurements
 
+    def get_sampling_rate(self) -> str:
+        """
+        Get information about set sampling rate
+        Note: Function should be called only after setting sampling rate
+        """
+        return self.uart_handler.read_last_data()
+
 
 if __name__ == '__main__':
     model = Model()

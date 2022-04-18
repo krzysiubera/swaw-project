@@ -34,6 +34,7 @@ class AppGui(QtWidgets.QMainWindow):
         self.sampling_rate_line_edit: QtWidgets.QLineEdit = self.findChild(QtWidgets.QLineEdit,
                                                                            "sampling_rate_line_edit")
         self.sampling_rate_button: QtWidgets.QPushButton = self.findChild(QtWidgets.QPushButton, "sampling_rate_button")
+        self.sampling_rate_set_label: QtWidgets.QLabel = self.findChild(QtWidgets.QLabel, "sampling_rate_set_label")
 
     @staticmethod
     def show_error_message(message: str):

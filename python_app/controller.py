@@ -69,3 +69,4 @@ class Controller:
             self.view.show_error_message("Incorrect sampling rate provided")
         else:
             self.model.set_sampling_rate(sample_rate)
+            self.view.sampling_rate_set_label.setText(self.model.get_sampling_rate())
