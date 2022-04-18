@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 from uart_handler import UartHandler
 
@@ -38,6 +40,9 @@ class Model:
         self.uart_handler.send_command("get meas hum")
         return self._process_data_buffer()
 
+    def set_sampling_rate(self, sampling_rate_sec) -> None:
+        self.uart_handler.send_command(f"set sampling rate:{sampling_rate_sec}")
+
     def _process_data_buffer(self) -> np.ndarray:
         collected_meas_num: int = 0
         measurements: np.ndarray = np.array([])
@@ -48,3 +53,13 @@ class Model:
             measurements = np.append(measurements, float(received_msg))
             collected_meas_num = collected_meas_num + 1
         return measurements
+
+
+if __name__ == '__main__':
+    model = Model()
+    data_buffer_prev = model.get_temperature_values()
+    print(f"Len data buffer prev: {len(data_buffer_prev)}")
+    model.set_sampling_rate(5)
+    time.sleep(60)
+    data_buffer = model.get_temperature_values()
+    print(f"Len data buffer now: {len(data_buffer)}")

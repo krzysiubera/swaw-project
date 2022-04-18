@@ -30,3 +30,16 @@ class AppGui(QtWidgets.QMainWindow):
                                                                           'humidity_plot_button')
         self.pressure_plot_button: QtWidgets.QPushButton = self.findChild(QtWidgets.QPushButton,
                                                                           'pressure_plot_button')
+
+        self.sampling_rate_line_edit: QtWidgets.QLineEdit = self.findChild(QtWidgets.QLineEdit,
+                                                                           "sampling_rate_line_edit")
+        self.sampling_rate_button: QtWidgets.QPushButton = self.findChild(QtWidgets.QPushButton, "sampling_rate_button")
+
+    @staticmethod
+    def show_error_message(message: str):
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Critical)
+        msg.setText("Error")
+        msg.setInformativeText(message)
+        msg.setWindowTitle("Error")
+        msg.exec_()

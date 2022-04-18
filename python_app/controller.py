@@ -23,6 +23,7 @@ class Controller:
         self.view.temperature_plot_button.clicked.connect(self.handle_temperature_plot)
         self.view.humidity_plot_button.clicked.connect(self.handle_humidity_plot)
         self.view.pressure_plot_button.clicked.connect(self.handle_pressure_plot)
+        self.view.sampling_rate_button.clicked.connect(self.handle_setting_sampling_rate)
 
     def handle_request_temperature(self):
         """ Request last temperature measurement and put result in the 'Temperature label' box """
@@ -59,3 +60,12 @@ class Controller:
         y_axis_val = self.model.get_pressure_values()
         x_axis_val = np.array([num for num in range(len(y_axis_val))])
         self.view.pressure_plot.plot(x_axis_val, y_axis_val, pen='b')
+
+    def handle_setting_sampling_rate(self):
+        """ Get text from 'Sampling rate line edit' box and send command setting sample rate of measurements """
+        try:
+            sample_rate: int = int(self.view.sampling_rate_line_edit.text())
+        except ValueError:
+            self.view.show_error_message("Incorrect sampling rate provided")
+        else:
+            self.model.set_sampling_rate(sample_rate)

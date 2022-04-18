@@ -123,6 +123,8 @@ void line_append() {
 				// multiplied by 1000 because it needs to be converted to miliseconds
 				uint32_t received_sampling_rate = atoi(token);
 				sample_time_meas_ms = received_sampling_rate * 1000;
+
+				printf("Sampling rate set to: %d seconds\n", received_sampling_rate);
 			} else {
 				printf("Command not found\n");
 			}
