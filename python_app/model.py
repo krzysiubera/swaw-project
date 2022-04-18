@@ -29,21 +29,29 @@ class Model:
         return self.uart_handler.read_last_data()
 
     def get_temperature_values(self) -> np.ndarray:
+        """ Get temperature values from UART data buffer """
         self.uart_handler.send_command("get meas temp")
         return self._process_data_buffer()
 
     def get_pressure_values(self) -> np.ndarray:
+        """ Get pressure values from UART data buffer """
         self.uart_handler.send_command("get meas press")
         return self._process_data_buffer()
 
     def get_humidity_values(self) -> np.ndarray:
+        """ Get humidity values from UART data buffer """
         self.uart_handler.send_command("get meas hum")
         return self._process_data_buffer()
 
     def set_sampling_rate(self, sampling_rate_sec) -> None:
+        """ Set sampling rate for BME280 measurements """
         self.uart_handler.send_command(f"set sampling rate:{sampling_rate_sec}")
 
     def _process_data_buffer(self) -> np.ndarray:
+        """
+        Receive measurements from UART data buffer until 'end_buffer_msg' is received or number of received measurements
+        exceeds 'max_num_measurements'
+        """
         collected_meas_num: int = 0
         measurements: np.ndarray = np.array([])
         while collected_meas_num < self.__class__.max_num_measurements:

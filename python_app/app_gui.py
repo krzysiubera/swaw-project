@@ -37,7 +37,11 @@ class AppGui(QtWidgets.QMainWindow):
         self.sampling_rate_set_label: QtWidgets.QLabel = self.findChild(QtWidgets.QLabel, "sampling_rate_set_label")
 
     @staticmethod
-    def show_error_message(message: str):
+    def show_error_message(message: str) -> None:
+        """
+        Create an error message and show it on the screen
+        :param message: text to be put in the error message
+        """
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Critical)
         msg.setText("Error")
