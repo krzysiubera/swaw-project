@@ -67,6 +67,7 @@ class Model:
         Get information about set sampling rate
         Note: Function should be called only after setting sampling rate
         """
+        self.uart_handler.send_command("get sampling rate")
         return self.uart_handler.read_last_data()
 
 

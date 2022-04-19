@@ -23,7 +23,8 @@ class Controller:
         self.view.temperature_plot_button.clicked.connect(self.handle_temperature_plot)
         self.view.humidity_plot_button.clicked.connect(self.handle_humidity_plot)
         self.view.pressure_plot_button.clicked.connect(self.handle_pressure_plot)
-        self.view.sampling_rate_button.clicked.connect(self.handle_setting_sampling_rate)
+        self.view.set_sampling_rate_button.clicked.connect(self.handle_setting_sampling_rate)
+        self.view.get_sampling_rate_button.clicked.connect(self.handle_getting_sample_rate)
 
     def handle_request_temperature(self) -> None:
         """ Request last temperature measurement and put result in the 'Temperature label' box """
@@ -63,8 +64,7 @@ class Controller:
 
     def handle_setting_sampling_rate(self) -> None:
         """
-        Get text from 'Sampling rate line edit' box, send command setting sample rate of measurements and put
-        confirmation from embedded system to 'Sampling rate set label' label
+        Get text from 'Sampling rate line edit' box, and send command setting sample rate
         """
         try:
             sample_rate: int = int(self.view.sampling_rate_line_edit.text())
@@ -72,4 +72,9 @@ class Controller:
             self.view.show_error_message("Incorrect sampling rate provided")
         else:
             self.model.set_sampling_rate(sample_rate)
-            self.view.sampling_rate_set_label.setText(self.model.get_sampling_rate())
+
+    def handle_getting_sample_rate(self) -> None:
+        """
+        Request information about sampling rate and put it in the 'Current sampling rate label' label
+        """
+        self.view.current_sampling_rate_label.setText(self.model.get_sampling_rate())

@@ -17,8 +17,8 @@
    <widget class="QTabWidget" name="SettingsTab">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>30</y>
+      <x>0</x>
+      <y>50</y>
       <width>1181</width>
       <height>781</height>
      </rect>
@@ -226,11 +226,11 @@
      <attribute name="title">
       <string>Settings</string>
      </attribute>
-     <widget class="QPushButton" name="sampling_rate_button">
+     <widget class="QPushButton" name="set_sampling_rate_button">
       <property name="geometry">
        <rect>
-        <x>450</x>
-        <y>330</y>
+        <x>440</x>
+        <y>160</y>
         <width>201</width>
         <height>101</height>
        </rect>
@@ -242,18 +242,18 @@
      <widget class="QLineEdit" name="sampling_rate_line_edit">
       <property name="geometry">
        <rect>
-        <x>430</x>
-        <y>270</y>
+        <x>420</x>
+        <y>100</y>
         <width>231</width>
         <height>51</height>
        </rect>
       </property>
      </widget>
-     <widget class="QLabel" name="sampling_rate_info_label">
+     <widget class="QLabel" name="sampling_rate_prompt_label">
       <property name="geometry">
        <rect>
         <x>210</x>
-        <y>210</y>
+        <y>40</y>
         <width>701</width>
         <height>51</height>
        </rect>
@@ -270,11 +270,11 @@
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <widget class="QLabel" name="sampling_rate_set_label">
+     <widget class="QLabel" name="current_sampling_rate_label">
       <property name="geometry">
        <rect>
-        <x>210</x>
-        <y>460</y>
+        <x>190</x>
+        <y>330</y>
         <width>701</width>
         <height>51</height>
        </rect>
@@ -289,6 +289,19 @@
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="get_sampling_rate_button">
+      <property name="geometry">
+       <rect>
+        <x>430</x>
+        <y>400</y>
+        <width>201</width>
+        <height>101</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Get sampling rate</string>
       </property>
      </widget>
     </widget>

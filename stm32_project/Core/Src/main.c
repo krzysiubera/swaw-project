@@ -123,9 +123,11 @@ void line_append() {
 				// multiplied by 1000 because it needs to be converted to miliseconds
 				uint32_t received_sampling_rate = atoi(token);
 				sample_time_meas_ms = received_sampling_rate * 1000;
-
-				printf("Sampling rate set to: %lu seconds\n", received_sampling_rate);
-			} else {
+				timer_meas = 0UL;
+			} else if (strcmp(line_buffer, "get sampling_rate")) {
+				printf("Measurements performed every %lu seconds\n", (uint32_t) (sample_time_meas_ms / 1000));
+			}
+			else {
 				printf("Command not found\n");
 			}
 			memset(line_buffer, '\0', LINE_MAX_LENGTH);
