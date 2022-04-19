@@ -14,6 +14,7 @@ class UartHandler(serial.Serial):
         Write a command to UART
         :param command - command to be sent to UART (without '\n' or '\r' chars)
         """
+        self.reset_input_buffer()
         self.write(f"{command}\r\n".encode())
 
     def read_last_data(self) -> str:
@@ -21,4 +22,6 @@ class UartHandler(serial.Serial):
         Read last line put on UART
         :return: last line put on UART in the form of string
         """
-        return self.readline().decode().strip()
+        read_line: str = self.readline().decode().strip()
+        self.reset_output_buffer()
+        return read_line
