@@ -291,19 +291,6 @@
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <widget class="QPushButton" name="get_sampling_rate_button">
-      <property name="geometry">
-       <rect>
-        <x>430</x>
-        <y>400</y>
-        <width>201</width>
-        <height>101</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Get sampling rate</string>
-      </property>
-     </widget>
     </widget>
    </widget>
   </widget>

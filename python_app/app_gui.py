@@ -35,8 +35,6 @@ class AppGui(QtWidgets.QMainWindow):
                                                                            "sampling_rate_line_edit")
         self.set_sampling_rate_button: QtWidgets.QPushButton = self.findChild(QtWidgets.QPushButton,
                                                                               "set_sampling_rate_button")
-        self.get_sampling_rate_button: QtWidgets.QPushButton = self.findChild(QtWidgets.QPushButton,
-                                                                              "get_sampling_rate_button")
         self.current_sampling_rate_label: QtWidgets.QLabel = self.findChild(QtWidgets.QLabel,
                                                                             "current_sampling_rate_label")
 

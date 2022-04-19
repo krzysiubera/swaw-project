@@ -11,5 +11,6 @@ if __name__ == '__main__':
     model: Model = Model()
     controller = Controller(view, model)
     controller.connect_signals_to_slots()
+    controller.fill_default_values()
     view.show()
     app.exec_()
