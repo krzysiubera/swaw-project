@@ -19,7 +19,7 @@ class Controller:
         self.view.temperature_label.setText(f"{self.model.get_last_temperature()} deg C")
         self.view.humidity_label.setText(f"{self.model.get_last_humidity()} %")
         self.view.pressure_label.setText(f"{self.model.get_last_pressure()} hPa")
-        self.view.current_sampling_rate_label.setText(f"{self.model.get_sampling_rate()}")
+        self.view.current_sampling_rate_label.setText(f"Measurements performed every {self.model.get_sampling_rate()}")
 
     def connect_signals_to_slots(self):
         """
@@ -75,14 +75,15 @@ class Controller:
 
     def handle_setting_sampling_rate(self) -> None:
         """
-        Get text from 'Sampling rate line edit' box, and send command setting sample rate and update
-        'Current sampling rate label' label
+        Get text from 'Sampling rate line edit' box, reconfigure timer responsible for updating data on "Last
+        measurements" tab, send command setting sample rate and update 'Current sampling rate' label
         """
         try:
             sample_rate: int = int(self.view.sampling_rate_line_edit.text())
         except ValueError:
             self.view.show_error_message("Incorrect sampling rate provided")
         else:
+            self.view.timer_last_measurements.setInterval(sample_rate * 1000)
             self.model.set_sampling_rate(sample_rate)
             self.view.current_sampling_rate_label.setText(f"Measurements performed every "
-                                                          f"{self.model.get_sampling_rate()} seconds")
+                                                          f"{self.model.get_sampling_rate()}")
