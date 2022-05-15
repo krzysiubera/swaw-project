@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>4</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -145,8 +145,8 @@
      <widget class="QPushButton" name="temperature_plot_button">
       <property name="geometry">
        <rect>
-        <x>480</x>
-        <y>560</y>
+        <x>470</x>
+        <y>630</y>
         <width>221</width>
         <height>81</height>
        </rect>
@@ -159,10 +159,31 @@
       <property name="geometry">
        <rect>
         <x>140</x>
-        <y>30</y>
+        <y>110</y>
         <width>890</width>
         <height>510</height>
        </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label">
+      <property name="geometry">
+       <rect>
+        <x>140</x>
+        <y>40</y>
+        <width>891</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Temperature plot [° C]</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
       </property>
      </widget>
     </widget>
@@ -174,7 +195,7 @@
       <property name="geometry">
        <rect>
         <x>470</x>
-        <y>600</y>
+        <y>630</y>
         <width>221</width>
         <height>81</height>
        </rect>
@@ -187,10 +208,31 @@
       <property name="geometry">
        <rect>
         <x>140</x>
-        <y>30</y>
+        <y>110</y>
         <width>890</width>
         <height>510</height>
        </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_2">
+      <property name="geometry">
+       <rect>
+        <x>140</x>
+        <y>40</y>
+        <width>891</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Humidity plot [%]</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
       </property>
      </widget>
     </widget>
@@ -202,7 +244,7 @@
       <property name="geometry">
        <rect>
         <x>510</x>
-        <y>590</y>
+        <y>640</y>
         <width>221</width>
         <height>81</height>
        </rect>
@@ -215,10 +257,31 @@
       <property name="geometry">
        <rect>
         <x>140</x>
-        <y>30</y>
+        <y>120</y>
         <width>890</width>
         <height>510</height>
        </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_3">
+      <property name="geometry">
+       <rect>
+        <x>140</x>
+        <y>50</y>
+        <width>891</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Pressure plot [hPa]</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
       </property>
      </widget>
     </widget>
