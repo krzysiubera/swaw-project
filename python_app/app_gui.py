@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets, uic
+from PyQt5 import QtWidgets, QtCore, uic
 import pyqtgraph
 
 
@@ -9,6 +9,9 @@ class AppGui(QtWidgets.QMainWindow):
         """ Init GUI application and create elements on the screen """
         super().__init__()
         uic.loadUi('designer/app_gui.ui', self)
+
+        self.tab_widget: QtWidgets.QTabWidget = self.findChild(QtWidgets.QTabWidget, "tabWidget")
+        self.last_measurements_widget = self.findChild(QtWidgets.QWidget, "last_measurements_widget")
 
         self.temperature_button: QtWidgets.QPushButton = self.findChild(QtWidgets.QPushButton, 'temperature_button')
         self.temperature_label: QtWidgets.QLabel = self.findChild(QtWidgets.QLabel, 'temperature_label')
@@ -30,6 +33,8 @@ class AppGui(QtWidgets.QMainWindow):
                                                                               "set_sampling_rate_button")
         self.current_sampling_rate_label: QtWidgets.QLabel = self.findChild(QtWidgets.QLabel,
                                                                             "current_sampling_rate_label")
+
+        self.timer_last_measurements: QtCore.QTimer = QtCore.QTimer()
 
     @staticmethod
     def show_error_message(message: str) -> None:

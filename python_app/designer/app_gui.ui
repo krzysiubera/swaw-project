@@ -13,8 +13,8 @@
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
-  <widget class="QWidget" name="centralwidget">
-   <widget class="QTabWidget" name="SettingsTab">
+  <widget class="QWidget" name="central_widget">
+   <widget class="QTabWidget" name="tabWidget">
     <property name="geometry">
      <rect>
       <x>0</x>
@@ -26,7 +26,7 @@
     <property name="currentIndex">
      <number>0</number>
     </property>
-    <widget class="QWidget" name="tab">
+    <widget class="QWidget" name="last_measurements_widget">
      <attribute name="title">
       <string>Last measurements</string>
      </attribute>
@@ -157,7 +157,7 @@
       </property>
      </widget>
     </widget>
-    <widget class="QWidget" name="tab_5">
+    <widget class="QWidget" name="temperature_plot_widget">
      <attribute name="title">
       <string>Temperature plot</string>
      </attribute>
@@ -206,7 +206,7 @@
       </property>
      </widget>
     </widget>
-    <widget class="QWidget" name="tab_4">
+    <widget class="QWidget" name="humidity_plot_widget">
      <attribute name="title">
       <string>Humidity plot</string>
      </attribute>
@@ -255,7 +255,7 @@
       </property>
      </widget>
     </widget>
-    <widget class="QWidget" name="tab_3">
+    <widget class="QWidget" name="pressure_plot_widget">
      <attribute name="title">
       <string>Pressure plot</string>
      </attribute>
@@ -304,7 +304,7 @@
       </property>
      </widget>
     </widget>
-    <widget class="QWidget" name="tab_2">
+    <widget class="QWidget" name="settings_widget">
      <attribute name="title">
       <string>Settings</string>
      </attribute>

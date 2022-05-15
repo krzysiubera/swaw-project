@@ -15,33 +15,42 @@ class Controller:
         self.model: Model = model
         self.view: AppGui = view
 
-    def connect_signals_to_slots(self):
-        """ Connect signals from buttons with their slots """
-        self.view.temperature_plot_button.clicked.connect(self.handle_temperature_plot)
-        self.view.humidity_plot_button.clicked.connect(self.handle_humidity_plot)
-        self.view.pressure_plot_button.clicked.connect(self.handle_pressure_plot)
-        self.view.set_sampling_rate_button.clicked.connect(self.handle_setting_sampling_rate)
-
     def fill_default_values(self):
         self.view.temperature_label.setText(f"{self.model.get_last_temperature()} deg C")
         self.view.humidity_label.setText(f"{self.model.get_last_humidity()} %")
         self.view.pressure_label.setText(f"{self.model.get_last_pressure()} hPa")
         self.view.current_sampling_rate_label.setText(f"{self.model.get_sampling_rate()}")
 
-    def handle_request_temperature(self) -> None:
-        """ Request last temperature measurement and put result in the 'Temperature label' box """
-        result: str = self.model.get_last_temperature()
-        self.view.temperature_label.setText(f"{result} deg C")
+    def connect_signals_to_slots(self):
+        """
+        Connect signals (emitted from buttons responsible for plotting measurements) to slots (functions responsible
+        for getting data from the embedded system to be plotted)
+        """
+        self.view.temperature_plot_button.clicked.connect(self.handle_temperature_plot)
+        self.view.humidity_plot_button.clicked.connect(self.handle_humidity_plot)
+        self.view.pressure_plot_button.clicked.connect(self.handle_pressure_plot)
+        self.view.set_sampling_rate_button.clicked.connect(self.handle_setting_sampling_rate)
 
-    def handle_request_humidity(self) -> None:
-        """ Request last humidity measurement and put result in the 'Humidity label' box """
-        result: str = self.model.get_last_humidity()
-        self.view.humidity_label.setText(f"{result} %")
+    def init_timer(self):
+        """
+        Get sampling rate from the embedded system and set it as an update rate of QTimer, connect to callback and
+        start timer
+        """
+        current_sampling_rate_seconds = int(self.model.get_sampling_rate().split()[0])
+        # this function accepts update time in milli seconds
+        self.view.timer_last_measurements.setInterval(current_sampling_rate_seconds * 1000)
+        self.view.timer_last_measurements.timeout.connect(self.update_timer_callback)
+        self.view.timer_last_measurements.start()
 
-    def handle_request_pressure(self) -> None:
-        """ Request last pressure measurement and put result in the 'Pressure label' box """
-        result: str = self.model.get_last_pressure()
-        self.view.pressure_label.setText(f"{result} hPa")
+    def update_timer_callback(self):
+        """ Update widget with last measurements of temperature, pressure and humidity """
+        if self.view.tab_widget.currentWidget() is self.view.last_measurements_widget:
+            temperature = self.model.get_last_temperature()
+            humidity = self.model.get_last_humidity()
+            pressure = self.model.get_last_pressure()
+            self.view.temperature_label.setText(f"{temperature} deg C")
+            self.view.humidity_label.setText(f"{humidity} %")
+            self.view.pressure_label.setText(f"{pressure} hPa")
 
     def handle_temperature_plot(self) -> None:
         """ Request temperature measurements from the data buffer and plot it in the 'Temperature plot' widget """
@@ -75,4 +84,5 @@ class Controller:
             self.view.show_error_message("Incorrect sampling rate provided")
         else:
             self.model.set_sampling_rate(sample_rate)
-            self.view.current_sampling_rate_label.setText(self.model.get_sampling_rate())
+            self.view.current_sampling_rate_label.setText(f"Measurements performed every "
+                                                          f"{self.model.get_sampling_rate()} seconds")

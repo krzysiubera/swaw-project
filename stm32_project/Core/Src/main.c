@@ -125,7 +125,7 @@ void line_append() {
 				sample_time_meas_ms = received_sampling_rate * 1000;
 				timer_meas = 0UL;
 			} else if (strcmp(line_buffer, "get sampling_rate")) {
-				printf("Measurements performed every %lu seconds\n", (uint32_t) (sample_time_meas_ms / 1000));
+				printf("%lu seconds\n", (uint32_t) (sample_time_meas_ms / 1000));
 			}
 			else {
 				printf("Command not found\n");

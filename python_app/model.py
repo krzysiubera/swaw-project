@@ -1,5 +1,4 @@
 import time
-
 import numpy as np
 from uart_handler import UartHandler
 
@@ -64,8 +63,8 @@ class Model:
 
     def get_sampling_rate(self) -> str:
         """
-        Get information about set sampling rate
-        Note: Function should be called only after setting sampling rate
+        Get information about current sampling rate (in seconds).
+        :return string "%lu seconds", where %lu is a current sampling rate
         """
         self.uart_handler.send_command("get sampling rate")
         return self.uart_handler.read_last_data()
