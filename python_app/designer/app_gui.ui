@@ -30,50 +30,6 @@
      <attribute name="title">
       <string>Last measurements</string>
      </attribute>
-     <widget class="QPushButton" name="temperature_button">
-      <property name="geometry">
-       <rect>
-        <x>340</x>
-        <y>130</y>
-        <width>221</width>
-        <height>81</height>
-       </rect>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>8</pointsize>
-       </font>
-      </property>
-      <property name="text">
-       <string>Get last temperature</string>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="humidity_button">
-      <property name="geometry">
-       <rect>
-        <x>340</x>
-        <y>300</y>
-        <width>221</width>
-        <height>101</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Get last humidity</string>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="pressure_button">
-      <property name="geometry">
-       <rect>
-        <x>340</x>
-        <y>520</y>
-        <width>221</width>
-        <height>81</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Get last pressure</string>
-      </property>
-     </widget>
      <widget class="QLabel" name="pressure_label">
       <property name="geometry">
        <rect>
@@ -132,6 +88,69 @@
       </property>
       <property name="text">
        <string>TextLabel</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_4">
+      <property name="geometry">
+       <rect>
+        <x>270</x>
+        <y>145</y>
+        <width>271</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Last temperature</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_5">
+      <property name="geometry">
+       <rect>
+        <x>270</x>
+        <y>320</y>
+        <width>271</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Last humidity</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_6">
+      <property name="geometry">
+       <rect>
+        <x>260</x>
+        <y>530</y>
+        <width>271</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Last pressure</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>

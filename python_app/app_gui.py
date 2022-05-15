@@ -24,13 +24,6 @@ class AppGui(QtWidgets.QMainWindow):
         self.humidity_plot.showGrid(x=True, y=True, alpha=0.5)
         self.pressure_plot.showGrid(x=True, y=True, alpha=0.5)
 
-        self.temperature_plot_button: QtWidgets.QPushButton = self.findChild(QtWidgets.QPushButton,
-                                                                             'temperature_plot_button')
-        self.humidity_plot_button: QtWidgets.QPushButton = self.findChild(QtWidgets.QPushButton,
-                                                                          'humidity_plot_button')
-        self.pressure_plot_button: QtWidgets.QPushButton = self.findChild(QtWidgets.QPushButton,
-                                                                          'pressure_plot_button')
-
         self.sampling_rate_line_edit: QtWidgets.QLineEdit = self.findChild(QtWidgets.QLineEdit,
                                                                            "sampling_rate_line_edit")
         self.set_sampling_rate_button: QtWidgets.QPushButton = self.findChild(QtWidgets.QPushButton,

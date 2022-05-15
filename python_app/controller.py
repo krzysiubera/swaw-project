@@ -17,9 +17,6 @@ class Controller:
 
     def connect_signals_to_slots(self):
         """ Connect signals from buttons with their slots """
-        self.view.temperature_button.clicked.connect(self.handle_request_temperature)
-        self.view.humidity_button.clicked.connect(self.handle_request_humidity)
-        self.view.pressure_button.clicked.connect(self.handle_request_pressure)
         self.view.temperature_plot_button.clicked.connect(self.handle_temperature_plot)
         self.view.humidity_plot_button.clicked.connect(self.handle_humidity_plot)
         self.view.pressure_plot_button.clicked.connect(self.handle_pressure_plot)
