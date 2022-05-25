@@ -1,0 +1,7 @@
+sample:
+  name: condition monitor 
+tests:
+  bme280:
+    harness: console
+    tags: sensors
+    platform_allow: nucleo_f303re_custom
