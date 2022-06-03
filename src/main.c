@@ -14,9 +14,22 @@
 #include <logging/log.h>
 LOG_MODULE_REGISTER(main);
 
+#define DISK_WRITE_REQ		(0x0101)
+#define DISK_READ_REQ		(0x0100)
+#define DISK_DMA_READ_REQ	(0x0110)
+
 /* ring buffer */
-static uint8_t bme280_data_buf[1024];
+#define DATA_BUF_SIZE		(1024)
+static uint8_t bme280_data_buf[DATA_BUF_SIZE];
 static struct ring_buf bme280_data_ring_buf;
+
+/* message queue */
+static struct bme280_state data_msgq_buf[4]__attribute__((aligned(4)));
+static struct k_msgq data_msgq;
+
+/* k_poll_signal object */
+static struct k_poll_signal disk_sig;
+static struct k_poll_event disk_event;
 
 static struct bme280_context bme280_ctx;
 
@@ -49,6 +62,7 @@ static const char *disk = "SD";
 
 void main(void)
 {	
+	int status;
 	const struct device *rtc = NULL, *bme280 = NULL;
 	
 	if (rtc_get_device(&rtc)) {
@@ -63,9 +77,16 @@ void main(void)
 		for (;;);
 	}
 
-	ring_buf_init(&bme280_data_ring_buf, 1024, bme280_data_buf); 
+	k_msgq_init(&data_msgq, (char *)data_msgq_buf, sizeof(*data_msgq_buf), 4);
+
+	k_poll_signal_init(&disk_sig);
+
+	ring_buf_init(&bme280_data_ring_buf, DATA_BUF_SIZE, bme280_data_buf); 
 
 	k_work_init(&bme280_ctx.wq_item, bme280_worker);
+
+	status = k_thread_create(&disk_thr, disk_stack, 800, disk_worker, NULL, NULL,
+			NULL, -1, 0, K_NO_WAIT); 
 
 	counter_set_channel_alarm(rtc, 0, &rtc_alarm_cfg); 
 
@@ -76,8 +97,36 @@ void main(void)
 
 void disk_worker(void *a, void *b, void *c)
 {
+	unsigned int msgs_num;
+	struct k_poll_event disk_events[1] = {
+		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL,
+					K_POLL_MODE_NOTIFY_ONLY,
+					&disk_sig),
+	};
+	struct bme280_state curr_sensor_data[4];
+
 	for (;;) {
-	
+		k_poll(disk_events, 1, K_FOREVER);
+
+		switch (disk_events[0].signal->result) {
+		case DISK_WRITE_REQ:
+			msgs_num = k_msgq_num_used_get(&data_msgq);
+			for (unsigned int i = 0; i < msgs_num; ++i) {
+				k_msgq_get(&data_msgq, curr_sensor_data, K_FOREVER); 
+			}
+			printk("welcome from disk_worker()\n");
+			break;
+		case DISK_READ_REQ:
+			break;
+		case DISK_DMA_READ_REQ:
+			break;
+		default:
+			break;
+		}
+		
+		/* reset the disk_events state */
+		disk_events[0].signal->signaled = 0;
+		disk_events[0].state = K_POLL_STATE_NOT_READY;
 	}
 }
 
@@ -154,10 +203,11 @@ void bme280_worker(struct k_work *item)
 	sensor_channel_get(ctx->dev, SENSOR_CHAN_HUMIDITY, &ctx->state.humidity);
 	sensor_channel_get(ctx->dev, SENSOR_CHAN_GAS_RES, &ctx->state.gas);
 
-	ring_buf_put(&bme280_data_ring_buf, (const uint8_t *) &ctx->state,
-							sizeof(ctx->state));
+	if (k_msgq_put(&data_msgq, &ctx->state, K_NO_WAIT)) {
+	//	k_msgq_purge(&data_msgq);
+	}
 
-	
+	k_poll_signal_raise(&disk_sig, DISK_WRITE_REQ);
 
 	printk("[timestamp: %u] temp: %d.%06d; press: %d.%06d; humidity: %d.%06d;\n",
 		ctx->state.timestamp, ctx->state.temp.val1,
