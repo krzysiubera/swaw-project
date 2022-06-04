@@ -6,6 +6,7 @@
 #include <drivers/sensor.h>
 #include <drivers/uart.h>
 #include <drivers/counter.h>
+#include <drivers/console/uart_pipe.h>
 #include <storage/disk_access.h>
 #include <fs/fs.h>
 #include <ff.h>
@@ -17,6 +18,16 @@ LOG_MODULE_REGISTER(main);
 #define DISK_WRITE_REQ		(0x0101)
 #define DISK_READ_REQ		(0x0100)
 #define DISK_DMA_READ_REQ	(0x0110)
+
+/* fat_fs data */
+static FATFS fat_fs;
+/* mounting info */
+static struct fs_mount_t mp = {
+	.type = FS_FATFS,
+	.fs_data = &fat_fs,
+};
+
+static const char *disk_name = "SD";
 
 /* ring buffer */
 #define DATA_BUF_SIZE		(1024)
@@ -30,6 +41,27 @@ static struct k_msgq data_msgq;
 /* k_poll_signal object */
 static struct k_poll_signal disk_sig;
 static struct k_poll_event disk_event;
+
+/* pipe uart buffer */
+#define CONSOLE_BUF_SIZE	40
+static uint8_t console_rx_buf[CONSOLE_BUF_SIZE];
+static uint8_t *console_rx_handler(uint8_t *buf, size_t *off); 
+static void console_worker(struct k_work *item);
+
+struct console_context {
+	const struct device *dev;
+	struct k_work wq_item;
+	uint8_t * const rx_buf;
+	const uint8_t rx_buf_size;
+	uint8_t buf_offset;
+};
+
+static struct console_context console_ctx = {
+	.dev		= DEVICE_DT_GET_ANY(zephyr_console),
+	.rx_buf		= console_rx_buf,
+	.rx_buf_size	= CONSOLE_BUF_SIZE,
+	.buf_offset	= 0,
+};
 
 static struct bme280_context bme280_ctx;
 
@@ -58,8 +90,6 @@ static struct counter_alarm_cfg rtc_alarm_cfg = {
 	.flags		= 0,
 };
 
-static const char *disk = "SD";
-
 void main(void)
 {	
 	int status;
@@ -73,9 +103,11 @@ void main(void)
 		for (;;);
 	}
 
-	if (disk_init(disk)) {
+	if (disk_init(disk_name)) {
 		for (;;);
 	}
+
+	uart_pipe_register(console_rx_buf, CONSOLE_BUF_SIZE, console_rx_handler);
 
 	k_msgq_init(&data_msgq, (char *)data_msgq_buf, sizeof(*data_msgq_buf), 4);
 
@@ -84,9 +116,14 @@ void main(void)
 	ring_buf_init(&bme280_data_ring_buf, DATA_BUF_SIZE, bme280_data_buf); 
 
 	k_work_init(&bme280_ctx.wq_item, bme280_worker);
+	k_work_init(&console_ctx.wq_item, console_worker);
 
-	status = k_thread_create(&disk_thr, disk_stack, 800, disk_worker, NULL, NULL,
-			NULL, -1, 0, K_NO_WAIT); 
+	k_thread_create(&disk_thr, disk_stack, 800, disk_worker, NULL, NULL,
+						NULL, -2, 0, K_NO_WAIT); 
+
+	k_thread_create(&ui_thr, ui_stack, 800, ui_worker, NULL, NULL, NULL,
+							-1, 0, K_NO_WAIT);
+	
 
 	counter_set_channel_alarm(rtc, 0, &rtc_alarm_cfg); 
 
@@ -112,7 +149,7 @@ void disk_worker(void *a, void *b, void *c)
 		case DISK_WRITE_REQ:
 			msgs_num = k_msgq_num_used_get(&data_msgq);
 			for (unsigned int i = 0; i < msgs_num; ++i) {
-				k_msgq_get(&data_msgq, curr_sensor_data, K_FOREVER); 
+				k_msgq_get(&data_msgq, &curr_sensor_data[i], K_FOREVER); 
 			}
 			printk("welcome from disk_worker()\n");
 			break;
@@ -214,4 +251,37 @@ void bme280_worker(struct k_work *item)
 		ctx->state.temp.val2,
 		ctx->state.press.val1, ctx->state.press.val2,
 		ctx->state.humidity.val1, ctx->state.humidity.val2);
+}
+
+static uint8_t *console_rx_handler(uint8_t *buf, size_t *off)
+{
+	int status;
+	const char c = buf[(*off) - 1];
+
+	if (c == '\r' || c == '\n') {
+		/* simple workaround to buffer sharing, stupid as hell */
+		uart_irq_rx_disable(console_ctx.dev);
+		
+		/* reset the rx buffer position */	
+		buf = console_ctx.rx_buf;
+		console_ctx.buf_offset = *off;
+		*off = 0;
+
+		/* defer parsing the buffer to the seperate worker */
+		status = k_work_submit(&console_ctx.wq_item);
+		if (status < 0) {
+			LOG_ERR("submission to workqueue failed: %d", status);
+			return NULL;
+		}
+	}	
+
+	return buf + *off;
+}
+
+static void console_worker(struct k_work *item)
+{
+	
+
+	/* enable the rx interrupts again */
+	uart_irq_rx_enable(console_ctx.dev);
 }
