@@ -13,6 +13,7 @@
 #include "rtc_app.h"
 #include "bme280_app.h"
 #include <logging/log.h>
+#include "console_cmds.h"
 LOG_MODULE_REGISTER(main);
 
 #define DISK_WRITE_REQ		(0x0101)
@@ -40,10 +41,9 @@ static struct k_msgq data_msgq;
 
 /* k_poll_signal object */
 static struct k_poll_signal disk_sig;
-static struct k_poll_event disk_event;
 
 /* pipe uart buffer */
-#define CONSOLE_BUF_SIZE	40
+#define CONSOLE_BUF_SIZE	10
 static uint8_t console_rx_buf[CONSOLE_BUF_SIZE];
 static uint8_t *console_rx_handler(uint8_t *buf, size_t *off); 
 static void console_worker(struct k_work *item);
@@ -53,14 +53,15 @@ struct console_context {
 	struct k_work wq_item;
 	uint8_t * const rx_buf;
 	const uint8_t rx_buf_size;
-	uint8_t buf_offset;
+	uint8_t buf_len;
+	uint8_t cont_flag;
 };
 
 static struct console_context console_ctx = {
-	.dev		= DEVICE_DT_GET_ANY(zephyr_console),
+	.dev		= DEVICE_DT_GET(DT_NODELABEL(usart2)),// DEVICE_DT_GET(DT_CHOSEN(zephyr_console)),
 	.rx_buf		= console_rx_buf,
 	.rx_buf_size	= CONSOLE_BUF_SIZE,
-	.buf_offset	= 0,
+	.buf_len	= 0,
 };
 
 static struct bme280_context bme280_ctx;
@@ -90,10 +91,11 @@ static struct counter_alarm_cfg rtc_alarm_cfg = {
 	.flags		= 0,
 };
 
+const struct device *rtc = NULL;
+
 void main(void)
 {	
 	int status;
-	const struct device *rtc = NULL, *bme280 = NULL;
 	
 	if (rtc_get_device(&rtc)) {
 		for (;;);
@@ -121,12 +123,6 @@ void main(void)
 	k_thread_create(&disk_thr, disk_stack, 800, disk_worker, NULL, NULL,
 						NULL, -2, 0, K_NO_WAIT); 
 
-	k_thread_create(&ui_thr, ui_stack, 800, ui_worker, NULL, NULL, NULL,
-							-1, 0, K_NO_WAIT);
-	
-
-	counter_set_channel_alarm(rtc, 0, &rtc_alarm_cfg); 
-
 	while (1) {
 	
 	}
@@ -141,6 +137,7 @@ void disk_worker(void *a, void *b, void *c)
 					&disk_sig),
 	};
 	struct bme280_state curr_sensor_data[4];
+	const char read_req_info[] = "disk_worker: READ_REQ\n";
 
 	for (;;) {
 		k_poll(disk_events, 1, K_FOREVER);
@@ -154,6 +151,8 @@ void disk_worker(void *a, void *b, void *c)
 			printk("welcome from disk_worker()\n");
 			break;
 		case DISK_READ_REQ:
+			uart_pipe_send((const uint8_t*) read_req_info,
+						sizeof(read_req_info));
 			break;
 		case DISK_DMA_READ_REQ:
 			break;
@@ -246,41 +245,74 @@ void bme280_worker(struct k_work *item)
 
 	k_poll_signal_raise(&disk_sig, DISK_WRITE_REQ);
 
-	printk("[timestamp: %u] temp: %d.%06d; press: %d.%06d; humidity: %d.%06d;\n",
-		ctx->state.timestamp, ctx->state.temp.val1,
-		ctx->state.temp.val2,
-		ctx->state.press.val1, ctx->state.press.val2,
-		ctx->state.humidity.val1, ctx->state.humidity.val2);
+	if (console_ctx.cont_flag) {
+		printk("[timestamp: %u] temp: %d.%06d; press: %d.%06d; humidity: %d.%06d;\n",
+			ctx->state.timestamp, ctx->state.temp.val1,
+			ctx->state.temp.val2,
+			ctx->state.press.val1, ctx->state.press.val2,
+			ctx->state.humidity.val1, ctx->state.humidity.val2);
+	}
 }
 
 static uint8_t *console_rx_handler(uint8_t *buf, size_t *off)
 {
 	int status;
-	const char c = buf[(*off) - 1];
+	char *const c = &buf[(*off) - 1];
 
-	if (c == '\r' || c == '\n') {
-		/* simple workaround to buffer sharing, stupid as hell */
-		uart_irq_rx_disable(console_ctx.dev);
-		
-		/* reset the rx buffer position */	
-		buf = console_ctx.rx_buf;
-		console_ctx.buf_offset = *off;
-		*off = 0;
+	if (*c == '\r' || *c == '\n') {
+		if (&buf[*off] - console_ctx.rx_buf > 1) {
+			/* simple workaround to buffer sharing, stupid as hell */
+			uart_irq_rx_disable(console_ctx.dev);
 
-		/* defer parsing the buffer to the seperate worker */
-		status = k_work_submit(&console_ctx.wq_item);
-		if (status < 0) {
-			LOG_ERR("submission to workqueue failed: %d", status);
-			return NULL;
+			*c = '\0';
+
+			status = k_work_submit(&console_ctx.wq_item);
+			if (status < 0) {
+				LOG_ERR("submission to workqueue failed: %d",
+								status);
+			}
 		}
+		*off = 0;
+	} else if (*off >= console_ctx.rx_buf_size) {
+		*off = 0;		
 	}	
 
-	return buf + *off;
+	return buf;
+}
+
+/* ASSUMPTION: the command consists of two bytes */
+static inline uint8_t console_get_command_id(const uint8_t *buf)
+{
+
+	return (*(buf + 1) - 48) + ((*buf) - 48) * 10;
 }
 
 static void console_worker(struct k_work *item)
 {
-	
+	const uint8_t cmd_id = console_get_command_id(console_ctx.rx_buf);	
+
+	printk("command_id: %hu\n", cmd_id);
+	switch (cmd_id) {
+	case START_MEASUREMENTS:
+		counter_set_channel_alarm(rtc, 0, &rtc_alarm_cfg); 
+		break;	
+	case STOP_MEASUREMENTS:
+		counter_cancel_channel_alarm(rtc, 0);
+		break;
+	case GET_MEASUREMENTS:
+		k_poll_signal_raise(&disk_sig, DISK_READ_REQ);
+		break;
+	case SET_SAMPLING_INTERVAL:
+		rtc_alarm_cfg.ticks = atoi(&console_ctx.rx_buf[2]);
+		break;
+	case GET_CONTINUOUS_MEASUREMENTS:
+		console_ctx.cont_flag ^= 1;
+		break;
+	case LIST_MEASUREMENTS:
+		break;
+	default:
+		break;
+	}
 
 	/* enable the rx interrupts again */
 	uart_irq_rx_enable(console_ctx.dev);
