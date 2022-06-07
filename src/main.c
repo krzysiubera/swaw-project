@@ -14,11 +14,18 @@
 #include "bme280_app.h"
 #include <logging/log.h>
 #include "console_cmds.h"
+#include "disk_cmds.h"
 LOG_MODULE_REGISTER(main);
 
 #define DISK_WRITE_REQ		(0x0101)
 #define DISK_READ_REQ		(0x0100)
 #define DISK_DMA_READ_REQ	(0x0110)
+
+#define CONSOLE_BUF_SIZE	64
+
+/* file system ops */
+#define DISK_NAME	"SD"
+#define FATFS_MOUNT_PT	"/SD:"
 
 /* fat_fs data */
 static FATFS fat_fs;
@@ -26,9 +33,10 @@ static FATFS fat_fs;
 static struct fs_mount_t mp = {
 	.type = FS_FATFS,
 	.fs_data = &fat_fs,
+	.mnt_point = FATFS_MOUNT_PT, 
 };
 
-static const char *disk_name = "SD";
+static struct k_pipe fs_ops_path_pipe;
 
 /* ring buffer */
 #define DATA_BUF_SIZE		(1024)
@@ -43,7 +51,6 @@ static struct k_msgq data_msgq;
 static struct k_poll_signal disk_sig;
 
 /* pipe uart buffer */
-#define CONSOLE_BUF_SIZE	10
 static uint8_t console_rx_buf[CONSOLE_BUF_SIZE];
 static uint8_t *console_rx_handler(uint8_t *buf, size_t *off); 
 static void console_worker(struct k_work *item);
@@ -53,31 +60,29 @@ struct console_context {
 	struct k_work wq_item;
 	uint8_t * const rx_buf;
 	const uint8_t rx_buf_size;
-	uint8_t buf_len;
+	uint8_t rx_buf_len;
 	uint8_t cont_flag;
 };
 
 static struct console_context console_ctx = {
-	.dev		= DEVICE_DT_GET(DT_NODELABEL(usart2)),// DEVICE_DT_GET(DT_CHOSEN(zephyr_console)),
+	//.dev		= DEVICE_DT_GET(DT_NODELABEL(usart2)),
+	.dev		= DEVICE_DT_GET(DT_CHOSEN(zephyr_console)),
 	.rx_buf		= console_rx_buf,
 	.rx_buf_size	= CONSOLE_BUF_SIZE,
-	.buf_len	= 0,
+	.rx_buf_len	= 0,
 };
 
 static struct bme280_context bme280_ctx;
 
 void bme280_worker(struct k_work *item);
 
-
 void disk_worker(void *a, void *b, void *c);
-void ui_worker(void *a, void *b, void *c);
 
 /*
  *Define and initialize threads.
  */
-K_THREAD_STACK_DEFINE(disk_stack, 800);
-K_THREAD_STACK_DEFINE(ui_stack, 800);
-static struct k_thread disk_thr, ui_thr;
+K_THREAD_STACK_DEFINE(disk_stack, 4096);
+static struct k_thread disk_thr;
 
 static int disk_init(const char *pdrv);
 
@@ -95,8 +100,6 @@ const struct device *rtc = NULL;
 
 void main(void)
 {	
-	int status;
-	
 	if (rtc_get_device(&rtc)) {
 		for (;;);
 	}
@@ -105,13 +108,19 @@ void main(void)
 		for (;;);
 	}
 
-	if (disk_init(disk_name)) {
+	if (disk_init(DISK_NAME)) {
+		for (;;);
+	}
+
+	if (fs_mount(&mp)) {
 		for (;;);
 	}
 
 	uart_pipe_register(console_rx_buf, CONSOLE_BUF_SIZE, console_rx_handler);
 
 	k_msgq_init(&data_msgq, (char *)data_msgq_buf, sizeof(*data_msgq_buf), 4);
+	//k_pipe_init(&fs_ops_path_pipe, fs_ops_path_buf, CONSOLE_BUF_SIZE);
+	k_pipe_init(&fs_ops_path_pipe, NULL, 0);
 
 	k_poll_signal_init(&disk_sig);
 
@@ -120,7 +129,7 @@ void main(void)
 	k_work_init(&bme280_ctx.wq_item, bme280_worker);
 	k_work_init(&console_ctx.wq_item, console_worker);
 
-	k_thread_create(&disk_thr, disk_stack, 800, disk_worker, NULL, NULL,
+	k_thread_create(&disk_thr, disk_stack, 4096,disk_worker, NULL, NULL,
 						NULL, -2, 0, K_NO_WAIT); 
 
 	while (1) {
@@ -128,8 +137,48 @@ void main(void)
 	}
 }
 
+static int lsdir(const char *path)
+{
+	int res;
+	struct fs_dir_t dirp;
+	static struct fs_dirent entry;
+
+	fs_dir_t_init(&dirp);
+
+	/* Verify fs_opendir() */
+	res = fs_opendir(&dirp, path);
+	if (res) {
+		printk("Error opening dir %s [%d]\n", path, res);
+		return res;
+	}
+
+	printk("\nListing dir %s ...\n", path);
+	for (;;) {
+		/* Verify fs_readdir() */
+		res = fs_readdir(&dirp, &entry);
+
+		/* entry.name[0] == 0 means end-of-dir */
+		if (res || entry.name[0] == 0) {
+			break;
+		}
+
+		if (entry.type == FS_DIR_ENTRY_DIR) {
+			printk("[DIR ] %s\n", entry.name);
+		} else {
+			printk("[FILE] %s (size = %zu)\n",
+				entry.name, entry.size);
+		}
+	}
+
+	/* Verify fs_closedir() */
+	fs_closedir(&dirp);
+
+	return res;
+}
 void disk_worker(void *a, void *b, void *c)
 {
+	int status = 10;
+	size_t bytes_read = 10;
 	unsigned int msgs_num;
 	struct k_poll_event disk_events[1] = {
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL,
@@ -138,23 +187,58 @@ void disk_worker(void *a, void *b, void *c)
 	};
 	struct bme280_state curr_sensor_data[4];
 	const char read_req_info[] = "disk_worker: READ_REQ\n";
+	static char fs_ops_buf[CONSOLE_BUF_SIZE]; 
+
+	/* allow only one entry to be opened */
+	struct fs_dir_t dir;
+	struct fs_file_t file;
 
 	for (;;) {
 		k_poll(disk_events, 1, K_FOREVER);
 
+		status = k_pipe_get(&fs_ops_path_pipe, fs_ops_buf, console_ctx.rx_buf_len - 2, &bytes_read,
+								console_ctx.rx_buf_len - 2, K_FOREVER);
+
 		switch (disk_events[0].signal->result) {
-		case DISK_WRITE_REQ:
+		case CREATE_DIR:
+			printk("CREATE_DIR\n");
+			status = fs_mkdir((const char*) fs_ops_buf);	
+			if (status) {
+				printk("fs_mkdir() fail: %d\n", status);
+				break;
+			}
+		case OPEN_DIR:
+			fs_dir_t_init(&dir);
+			printk("init ok\n");
+			status = fs_opendir(&dir, fs_ops_buf);
+			if (status) {
+				printk("fs_opendir() fail: %d\n", status);
+				break;
+			}
+			
+			printk("opendir ok\n");
+			status = lsdir(fs_ops_buf);
+			if (status) {
+				printk("lsdir() fail: %d\n", status);
+				break;
+			}
+			printk("lsdir ok\n");
+			break;
+		case CLOSE_DIR:
+			status = fs_closedir(&dir);
+			if (status) {
+				printk("fs_closedir() fail: %d\n", status);
+			}
+			break;
+		case FILE_WRITE:
 			msgs_num = k_msgq_num_used_get(&data_msgq);
 			for (unsigned int i = 0; i < msgs_num; ++i) {
 				k_msgq_get(&data_msgq, &curr_sensor_data[i], K_FOREVER); 
 			}
-			printk("welcome from disk_worker()\n");
 			break;
-		case DISK_READ_REQ:
+		case FILE_READ:
 			uart_pipe_send((const uint8_t*) read_req_info,
 						sizeof(read_req_info));
-			break;
-		case DISK_DMA_READ_REQ:
 			break;
 		default:
 			break;
@@ -165,14 +249,6 @@ void disk_worker(void *a, void *b, void *c)
 		disk_events[0].state = K_POLL_STATE_NOT_READY;
 	}
 }
-
-void ui_worker(void *a, void *b, void *c)
-{
-	for (;;) {
-	
-	}
-}
-
 
 static int disk_init(const char *pdrv)
 {
@@ -243,7 +319,7 @@ void bme280_worker(struct k_work *item)
 	//	k_msgq_purge(&data_msgq);
 	}
 
-	k_poll_signal_raise(&disk_sig, DISK_WRITE_REQ);
+	k_poll_signal_raise(&disk_sig, FILE_WRITE);
 
 	if (console_ctx.cont_flag) {
 		printk("[timestamp: %u] temp: %d.%06d; press: %d.%06d; humidity: %d.%06d;\n",
@@ -260,7 +336,7 @@ static uint8_t *console_rx_handler(uint8_t *buf, size_t *off)
 	char *const c = &buf[(*off) - 1];
 
 	if (*c == '\r' || *c == '\n') {
-		if (&buf[*off] - console_ctx.rx_buf > 1) {
+		if (*off > 2) {
 			/* simple workaround to buffer sharing, stupid as hell */
 			uart_irq_rx_disable(console_ctx.dev);
 
@@ -271,6 +347,7 @@ static uint8_t *console_rx_handler(uint8_t *buf, size_t *off)
 				LOG_ERR("submission to workqueue failed: %d",
 								status);
 			}
+			console_ctx.rx_buf_len = *off;
 		}
 		*off = 0;
 	} else if (*off >= console_ctx.rx_buf_size) {
@@ -289,18 +366,23 @@ static inline uint8_t console_get_command_id(const uint8_t *buf)
 
 static void console_worker(struct k_work *item)
 {
+	int status;
+	size_t bytes_written;
+	enum disk_cmds disk_cmd = NOP;
 	const uint8_t cmd_id = console_get_command_id(console_ctx.rx_buf);	
 
 	printk("command_id: %hu\n", cmd_id);
 	switch (cmd_id) {
 	case START_MEASUREMENTS:
+		disk_cmd = CREATE_DIR;
 		counter_set_channel_alarm(rtc, 0, &rtc_alarm_cfg); 
 		break;	
 	case STOP_MEASUREMENTS:
 		counter_cancel_channel_alarm(rtc, 0);
+		disk_cmd = CLOSE_DIR;
 		break;
 	case GET_MEASUREMENTS:
-		k_poll_signal_raise(&disk_sig, DISK_READ_REQ);
+		disk_cmd = FILE_READ;
 		break;
 	case SET_SAMPLING_INTERVAL:
 		rtc_alarm_cfg.ticks = atoi(&console_ctx.rx_buf[2]);
@@ -309,9 +391,20 @@ static void console_worker(struct k_work *item)
 		console_ctx.cont_flag ^= 1;
 		break;
 	case LIST_MEASUREMENTS:
+		disk_cmd = LIST_DIRS;
 		break;
 	default:
 		break;
+	}
+
+	/* find more elegant way for checking this flags e.g. make proper ascending fields in enum */
+	if (disk_cmd != NOP && disk_cmd != LIST_DIRS && disk_cmd != CLOSE_DIR) {
+		k_poll_signal_raise(&disk_sig, disk_cmd);
+		status = k_pipe_put(&fs_ops_path_pipe, &console_ctx.rx_buf[2], console_ctx.rx_buf_len - 2,
+					&bytes_written, console_ctx.rx_buf_len - 2, K_FOREVER);	
+		if (status) {
+			printk("k_pipe_put() failed!\n");
+		}
 	}
 
 	/* enable the rx interrupts again */
