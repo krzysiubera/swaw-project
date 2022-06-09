@@ -7,8 +7,8 @@
 #include <drivers/sensor.h>
 
 struct bme280_state {
-	struct sensor_value gas, humidity, temp, press;
 	uint32_t timestamp;
+	struct sensor_value temp, press, humidity;
 };
 
 struct bme280_context {

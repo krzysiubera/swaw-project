@@ -17,6 +17,7 @@
 #include "disk_cmds.h"
 LOG_MODULE_REGISTER(main);
 
+static int lsdir(const char *path);
 #define DISK_WRITE_REQ		(0x0101)
 #define DISK_READ_REQ		(0x0100)
 #define DISK_DMA_READ_REQ	(0x0110)
@@ -37,15 +38,7 @@ static struct fs_mount_t mp = {
 };
 
 static struct k_pipe fs_ops_path_pipe;
-
-/* ring buffer */
-#define DATA_BUF_SIZE		(1024)
-static uint8_t bme280_data_buf[DATA_BUF_SIZE];
-static struct ring_buf bme280_data_ring_buf;
-
-/* message queue */
-static struct bme280_state data_msgq_buf[4]__attribute__((aligned(4)));
-static struct k_msgq data_msgq;
+static struct k_pipe sensor_data_pipe;
 
 /* k_poll_signal object */
 static struct k_poll_signal disk_sig;
@@ -118,13 +111,10 @@ void main(void)
 
 	uart_pipe_register(console_rx_buf, CONSOLE_BUF_SIZE, console_rx_handler);
 
-	k_msgq_init(&data_msgq, (char *)data_msgq_buf, sizeof(*data_msgq_buf), 4);
-	//k_pipe_init(&fs_ops_path_pipe, fs_ops_path_buf, CONSOLE_BUF_SIZE);
 	k_pipe_init(&fs_ops_path_pipe, NULL, 0);
+	k_pipe_init(&sensor_data_pipe, NULL, 0);
 
 	k_poll_signal_init(&disk_sig);
-
-	ring_buf_init(&bme280_data_ring_buf, DATA_BUF_SIZE, bme280_data_buf); 
 
 	k_work_init(&bme280_ctx.wq_item, bme280_worker);
 	k_work_init(&console_ctx.wq_item, console_worker);
@@ -137,108 +127,124 @@ void main(void)
 	}
 }
 
-static int lsdir(const char *path)
-{
-	int res;
-	struct fs_dir_t dirp;
-	static struct fs_dirent entry;
-
-	fs_dir_t_init(&dirp);
-
-	/* Verify fs_opendir() */
-	res = fs_opendir(&dirp, path);
-	if (res) {
-		printk("Error opening dir %s [%d]\n", path, res);
-		return res;
-	}
-
-	printk("\nListing dir %s ...\n", path);
-	for (;;) {
-		/* Verify fs_readdir() */
-		res = fs_readdir(&dirp, &entry);
-
-		/* entry.name[0] == 0 means end-of-dir */
-		if (res || entry.name[0] == 0) {
-			break;
-		}
-
-		if (entry.type == FS_DIR_ENTRY_DIR) {
-			printk("[DIR ] %s\n", entry.name);
-		} else {
-			printk("[FILE] %s (size = %zu)\n",
-				entry.name, entry.size);
-		}
-	}
-
-	/* Verify fs_closedir() */
-	fs_closedir(&dirp);
-
-	return res;
-}
 void disk_worker(void *a, void *b, void *c)
 {
 	int status = 10;
-	size_t bytes_read = 10;
-	unsigned int msgs_num;
+	ssize_t bytes_read = 10;
+	ssize_t bytes_written;
 	struct k_poll_event disk_events[1] = {
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL,
 					K_POLL_MODE_NOTIFY_ONLY,
 					&disk_sig),
 	};
-	struct bme280_state curr_sensor_data[4];
+
+	struct bme280_state sensor_data[2];
 	const char read_req_info[] = "disk_worker: READ_REQ\n";
 	static char fs_ops_buf[CONSOLE_BUF_SIZE]; 
+	static char sensor_data_stream[512]; //number completely out of blue 
 
-	/* allow only one entry to be opened */
-	struct fs_dir_t dir;
-	struct fs_file_t file;
+	/* 
+	 * only two dirs and files can be opened at the same time
+	 * one is READ-ONLY, the second one is WRITE-ONLY */
+	//struct fs_dir_t dir[2];
+	struct fs_file_t file[2];
 
 	for (;;) {
 		k_poll(disk_events, 1, K_FOREVER);
 
 		status = k_pipe_get(&fs_ops_path_pipe, fs_ops_buf, console_ctx.rx_buf_len - 2, &bytes_read,
-								console_ctx.rx_buf_len - 2, K_FOREVER);
+								console_ctx.rx_buf_len - 2, K_NO_WAIT);
 
 		switch (disk_events[0].signal->result) {
-		case CREATE_DIR:
-			printk("CREATE_DIR\n");
-			status = fs_mkdir((const char*) fs_ops_buf);	
+	//	case CREATE_DIR:
+	//		printk("CREATE_DIR\n");
+	//		status = fs_mkdir((const char*) fs_ops_buf);	
+	//		if (status) {
+	//			printk("fs_mkdir() fail: %d\n", status);
+	//			break;
+	//		}
+	//	case OPEN_DIR:
+	//		fs_dir_t_init(&dir);
+	//		printk("init ok\n");
+	//		status = fs_opendir(&dir, fs_ops_buf);
+	//		if (status) {
+	//			printk("fs_opendir() fail: %d\n", status);
+	//			break;
+	//		}
+	//		
+	//		printk("opendir ok\n");
+	//		status = lsdir(fs_ops_buf);
+	//		if (status) {
+	//			printk("lsdir() fail: %d\n", status);
+	//			break;
+	//		}
+	//		printk("lsdir ok\n");
+	//		break;
+	//	case CLOSE_DIR:
+	//		status = fs_closedir(&dir);
+	//		if (status) {
+	//			printk("fs_closedir() fail: %d\n", status);
+	//		}
+	//		break;
+		case FILE_CREATE:
+			printk("FILE CREATE\n");
+			fs_file_t_init(&file[WRITE_DESC]);
+			status = fs_open(&file[WRITE_DESC], (const char*) fs_ops_buf,
+					FS_O_CREATE | FS_O_WRITE | FS_O_APPEND);
 			if (status) {
-				printk("fs_mkdir() fail: %d\n", status);
-				break;
-			}
-		case OPEN_DIR:
-			fs_dir_t_init(&dir);
-			printk("init ok\n");
-			status = fs_opendir(&dir, fs_ops_buf);
-			if (status) {
-				printk("fs_opendir() fail: %d\n", status);
-				break;
-			}
-			
-			printk("opendir ok\n");
-			status = lsdir(fs_ops_buf);
-			if (status) {
-				printk("lsdir() fail: %d\n", status);
-				break;
-			}
-			printk("lsdir ok\n");
-			break;
-		case CLOSE_DIR:
-			status = fs_closedir(&dir);
-			if (status) {
-				printk("fs_closedir() fail: %d\n", status);
+				printk("fs_open error: %d\n", status);
 			}
 			break;
 		case FILE_WRITE:
-			msgs_num = k_msgq_num_used_get(&data_msgq);
-			for (unsigned int i = 0; i < msgs_num; ++i) {
-				k_msgq_get(&data_msgq, &curr_sensor_data[i], K_FOREVER); 
+			printk("FILE_WRITE!\n");
+			status = k_pipe_get(&sensor_data_pipe, &sensor_data[WRITE_DESC],
+				sizeof(*sensor_data), &bytes_read, sizeof(*sensor_data),
+									K_FOREVER);	
+			bytes_written = fs_write(&file[WRITE_DESC], &sensor_data[WRITE_DESC],
+									sizeof(*sensor_data));
+			printk("bytes_written: %d\n", bytes_written);
+			if (bytes_written < 0) {
+				printk("fs_write fail: %d\n", bytes_written);
 			}
 			break;
 		case FILE_READ:
-			uart_pipe_send((const uint8_t*) read_req_info,
-						sizeof(read_req_info));
+			/* open for read */
+			printk("FILE READ\n");
+			fs_file_t_init(&file[READ_DESC]);
+			status = fs_open(&file[READ_DESC], (const char*) fs_ops_buf,
+									FS_O_READ);
+			if (status < 0) {
+				printk("fs_open error: %d\n");
+			}
+
+			do {
+				bytes_read = fs_read(&file[READ_DESC], &sensor_data[READ_DESC],
+									sizeof(*sensor_data));
+				if (bytes_read < 0) {
+					printk("fs_read err: %d\n", bytes_read);
+					break;
+				}
+				printk("bytes_read %d\n", bytes_read);
+				snprintk(sensor_data_stream, 512, 
+					"[timestamp: %u] temp: %d.%06d; press: %d.%06d; humidity: %d.%06d;\n",
+					sensor_data[READ_DESC].timestamp,
+					sensor_data[READ_DESC].temp.val1,
+					sensor_data[READ_DESC].temp.val2,
+					sensor_data[READ_DESC].press.val1 * 10,
+					sensor_data[READ_DESC].press.val2,
+					sensor_data[READ_DESC].humidity.val1,
+					sensor_data[READ_DESC].humidity.val2);
+				printk("press: %d.%06d\n", sensor_data[READ_DESC].press.val1,
+								sensor_data[READ_DESC].press.val2);
+				uart_pipe_send((const uint8_t*) sensor_data_stream,
+							strlen(sensor_data_stream));
+			} while (bytes_read != 0);
+
+			fs_close(&file[READ_DESC]);
+			break;
+		case FILE_CLOSE:
+			printk("FILE CLOSE\n");
+			fs_close(&file[WRITE_DESC]);
 			break;
 		default:
 			break;
@@ -305,6 +311,8 @@ void rtc_alarm_handler(const struct device *dev, uint8_t chan_id,
 
 void bme280_worker(struct k_work *item)
 {
+	int status;
+	size_t bytes_written;
 	struct bme280_context *ctx;
 
 	ctx = CONTAINER_OF(item, struct bme280_context, wq_item);
@@ -313,13 +321,13 @@ void bme280_worker(struct k_work *item)
 	sensor_channel_get(ctx->dev, SENSOR_CHAN_AMBIENT_TEMP, &ctx->state.temp);
 	sensor_channel_get(ctx->dev, SENSOR_CHAN_PRESS, &ctx->state.press);
 	sensor_channel_get(ctx->dev, SENSOR_CHAN_HUMIDITY, &ctx->state.humidity);
-	sensor_channel_get(ctx->dev, SENSOR_CHAN_GAS_RES, &ctx->state.gas);
-
-	if (k_msgq_put(&data_msgq, &ctx->state, K_NO_WAIT)) {
-	//	k_msgq_purge(&data_msgq);
-	}
 
 	k_poll_signal_raise(&disk_sig, FILE_WRITE);
+	status = k_pipe_put(&sensor_data_pipe, &ctx->state, sizeof(struct bme280_state),
+				&bytes_written, sizeof(struct bme280_state), K_FOREVER);	
+	if (status) {
+		printk("k_pipe_put() failed!\n");
+	}
 
 	if (console_ctx.cont_flag) {
 		printk("[timestamp: %u] temp: %d.%06d; press: %d.%06d; humidity: %d.%06d;\n",
@@ -374,12 +382,12 @@ static void console_worker(struct k_work *item)
 	printk("command_id: %hu\n", cmd_id);
 	switch (cmd_id) {
 	case START_MEASUREMENTS:
-		disk_cmd = CREATE_DIR;
+		disk_cmd = FILE_CREATE;
 		counter_set_channel_alarm(rtc, 0, &rtc_alarm_cfg); 
 		break;	
 	case STOP_MEASUREMENTS:
 		counter_cancel_channel_alarm(rtc, 0);
-		disk_cmd = CLOSE_DIR;
+		disk_cmd = FILE_CLOSE;
 		break;
 	case GET_MEASUREMENTS:
 		disk_cmd = FILE_READ;
@@ -409,4 +417,43 @@ static void console_worker(struct k_work *item)
 
 	/* enable the rx interrupts again */
 	uart_irq_rx_enable(console_ctx.dev);
+}
+
+static int lsdir(const char *path)
+{
+	int res;
+	struct fs_dir_t dirp;
+	static struct fs_dirent entry;
+
+	fs_dir_t_init(&dirp);
+
+	/* Verify fs_opendir() */
+	res = fs_opendir(&dirp, path);
+	if (res) {
+		printk("Error opening dir %s [%d]\n", path, res);
+		return res;
+	}
+
+	printk("\nListing dir %s ...\n", path);
+	for (;;) {
+		/* Verify fs_readdir() */
+		res = fs_readdir(&dirp, &entry);
+
+		/* entry.name[0] == 0 means end-of-dir */
+		if (res || entry.name[0] == 0) {
+			break;
+		}
+
+		if (entry.type == FS_DIR_ENTRY_DIR) {
+			printk("[DIR ] %s\n", entry.name);
+		} else {
+			printk("[FILE] %s (size = %zu)\n",
+				entry.name, entry.size);
+		}
+	}
+
+	/* Verify fs_closedir() */
+	fs_closedir(&dirp);
+
+	return res;
 }
