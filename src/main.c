@@ -17,9 +17,6 @@
 #include "disk_cmds.h"
 LOG_MODULE_REGISTER(main);
 
-#define DISK_WRITE_REQ		(0x0101)
-#define DISK_READ_REQ		(0x0100)
-#define DISK_DMA_READ_REQ	(0x0110)
 
 #define CONSOLE_BUF_SIZE	(255U)
 
@@ -166,7 +163,6 @@ void disk_worker(void *a, void *b, void *c)
 			ls(FATFS_MOUNT_PT); 
 			break;	
 		case FILE_CREATE:
-			printk("FILE CREATE\n");
 			fs_file_t_init(&file[WRITE_DESC]);
 			status = fs_open(&file[WRITE_DESC], (const char*) fs_ops_buf,
 					FS_O_CREATE | FS_O_WRITE | FS_O_APPEND);
@@ -178,19 +174,17 @@ void disk_worker(void *a, void *b, void *c)
 					sizeof(rtc_alarm_cfg.ticks)); 
 			break;
 		case FILE_WRITE:
-			printk("FILE_WRITE!\n");
 			status = k_pipe_get(&sensor_data_pipe, &sensor_data[WRITE_DESC],
 				sizeof(*sensor_data), &bytes_read, sizeof(*sensor_data),
 									K_FOREVER);	
 			bytes_written = fs_write(&file[WRITE_DESC], &sensor_data[WRITE_DESC],
 									sizeof(*sensor_data));
-			printk("bytes_written: %d\n", bytes_written);
+
 			if (bytes_written < 0) {
 				printk("fs_write fail: %d\n", bytes_written);
 			}
 			break;
 		case FILE_READ:
-			printk("FILE READ\n");
 			fs_file_t_init(&file[READ_DESC]);
 			status = fs_open(&file[READ_DESC], (const char*) fs_ops_buf,
 									FS_O_READ);
@@ -209,7 +203,6 @@ void disk_worker(void *a, void *b, void *c)
 					break;
 				}
 
-				printk("bytes_read %d\n", bytes_read);
 				snprintk(sensor_data_stream, 512, 
 					"temp: %d.%06d; press: %d.%06d; humidity: %d.%06d;\n",
 					sensor_data[READ_DESC].temp.val1,
@@ -227,7 +220,6 @@ void disk_worker(void *a, void *b, void *c)
 			fs_close(&file[READ_DESC]);
 			break;
 		case FILE_CLOSE:
-			printk("FILE CLOSE\n");
 			fs_close(&file[WRITE_DESC]);
 			break;
 		default:
@@ -370,7 +362,6 @@ static void console_worker(struct k_work *item)
 	enum disk_cmds disk_cmd = NOP;
 	const uint8_t cmd_id = console_get_command_id(console_ctx.rx_buf);	
 
-	printk("command_id: %hu\n", cmd_id);
 	switch (cmd_id) {
 	case START_MEASUREMENTS:
 		disk_cmd = FILE_CREATE;
@@ -386,9 +377,6 @@ static void console_worker(struct k_work *item)
 	case GET_MEASUREMENTS:
 		off = 3;
 		disk_cmd = FILE_READ;
-		break;
-	case SET_SAMPLING_INTERVAL:
-		rtc_alarm_cfg.ticks = atoi(&console_ctx.rx_buf[2]);
 		break;
 	case GET_CONTINUOUS_MEASUREMENTS:
 		console_ctx.cont_flag ^= 1;
