@@ -7,7 +7,6 @@
 #include <drivers/sensor.h>
 
 struct bme280_state {
-	uint32_t timestamp;
 	struct sensor_value temp, press, humidity;
 };
 

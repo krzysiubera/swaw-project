@@ -21,7 +21,7 @@ LOG_MODULE_REGISTER(main);
 #define DISK_READ_REQ		(0x0100)
 #define DISK_DMA_READ_REQ	(0x0110)
 
-#define CONSOLE_BUF_SIZE	64
+#define CONSOLE_BUF_SIZE	(255U)
 
 /* file system ops */
 #define DISK_NAME	"SD"
@@ -108,6 +108,7 @@ void main(void)
 	if (fs_mount(&mp)) {
 		for (;;);
 	}
+	printk("ok\n");
 
 	uart_pipe_register(console_rx_buf, CONSOLE_BUF_SIZE, console_rx_handler);
 
@@ -139,16 +140,26 @@ void disk_worker(void *a, void *b, void *c)
 	};
 
 	struct bme280_state sensor_data[2];
-	static char fs_ops_buf[CONSOLE_BUF_SIZE]; 
-	static char sensor_data_stream[512]; //number completely out of blue 
+	char fs_ops_buf[CONSOLE_BUF_SIZE]; 
+	char sensor_data_stream[512]; //number completely out of blue 
+	char file_header[32];
+	uint32_t ticks;
+	unsigned int off = 0;
+	
 
 	struct fs_file_t file[2];
 
 	for (;;) {
 		k_poll(disk_events, 1, K_FOREVER);
 
-		status = k_pipe_get(&fs_ops_path_pipe, fs_ops_buf, console_ctx.rx_buf_len - 2, &bytes_read,
-								console_ctx.rx_buf_len - 2, K_NO_WAIT);
+		if (disk_events[0].signal->result == FILE_CREATE) {
+			off = 6;
+		} else if (disk_events[0].signal->result == FILE_READ) {
+			off = 3;
+		}
+
+		status = k_pipe_get(&fs_ops_path_pipe, fs_ops_buf, console_ctx.rx_buf_len - off, &bytes_read,
+								console_ctx.rx_buf_len - off, K_NO_WAIT);
 
 		switch (disk_events[0].signal->result) {
 		case LIST_FILES:
@@ -162,6 +173,9 @@ void disk_worker(void *a, void *b, void *c)
 			if (status) {
 				printk("fs_open error: %d\n", status);
 			}
+
+			fs_write(&file[WRITE_DESC], &rtc_alarm_cfg.ticks,
+					sizeof(rtc_alarm_cfg.ticks)); 
 			break;
 		case FILE_WRITE:
 			printk("FILE_WRITE!\n");
@@ -184,17 +198,20 @@ void disk_worker(void *a, void *b, void *c)
 				printk("fs_open error: %d\n", status);
 			}
 
-			do {
+			fs_read(&file[READ_DESC], &ticks, sizeof(ticks));
+			snprintk(file_header, 32, "interval: %u\n", ticks);
+			uart_pipe_send((const uint8_t*) file_header, strlen(file_header));
+
+			for (;;) {
 				bytes_read = fs_read(&file[READ_DESC], &sensor_data[READ_DESC],
 									sizeof(*sensor_data));
-				if (bytes_read < 0) {
-					printk("fs_read err: %d\n", bytes_read);
+				if (bytes_read <= 0) {
 					break;
 				}
+
 				printk("bytes_read %d\n", bytes_read);
 				snprintk(sensor_data_stream, 512, 
-					"[timestamp: %u] temp: %d.%06d; press: %d.%06d; humidity: %d.%06d;\n",
-					sensor_data[READ_DESC].timestamp,
+					"temp: %d.%06d; press: %d.%06d; humidity: %d.%06d;\n",
 					sensor_data[READ_DESC].temp.val1,
 					sensor_data[READ_DESC].temp.val2,
 					sensor_data[READ_DESC].press.val1 * 10,
@@ -204,7 +221,8 @@ void disk_worker(void *a, void *b, void *c)
 
 				uart_pipe_send((const uint8_t*) sensor_data_stream,
 							strlen(sensor_data_stream));
-			} while (bytes_read != 0);
+					
+			}
 
 			fs_close(&file[READ_DESC]);
 			break;
@@ -260,7 +278,6 @@ void rtc_alarm_handler(const struct device *dev, uint8_t chan_id,
 	const struct counter_alarm_cfg *cfg;
 	
 	cfg = user_data;
-	bme280_ctx.state.timestamp = ticks;
 
 	status = k_work_submit(&bme280_ctx.wq_item);
 	if (status < 0) {
@@ -280,27 +297,30 @@ void bme280_worker(struct k_work *item)
 	int status;
 	size_t bytes_written;
 	struct bme280_context *ctx;
+	struct bme280_state state;
+	char buf[512];
 
 	ctx = CONTAINER_OF(item, struct bme280_context, wq_item);
 
 	sensor_sample_fetch(ctx->dev);
-	sensor_channel_get(ctx->dev, SENSOR_CHAN_AMBIENT_TEMP, &ctx->state.temp);
-	sensor_channel_get(ctx->dev, SENSOR_CHAN_PRESS, &ctx->state.press);
-	sensor_channel_get(ctx->dev, SENSOR_CHAN_HUMIDITY, &ctx->state.humidity);
+	sensor_channel_get(ctx->dev, SENSOR_CHAN_AMBIENT_TEMP, &state.temp);
+	sensor_channel_get(ctx->dev, SENSOR_CHAN_PRESS, &state.press);
+	sensor_channel_get(ctx->dev, SENSOR_CHAN_HUMIDITY, &state.humidity);
 
 	k_poll_signal_raise(&disk_sig, FILE_WRITE);
-	status = k_pipe_put(&sensor_data_pipe, &ctx->state, sizeof(struct bme280_state),
+	status = k_pipe_put(&sensor_data_pipe, &state, sizeof(struct bme280_state),
 				&bytes_written, sizeof(struct bme280_state), K_FOREVER);	
 	if (status) {
 		printk("k_pipe_put() failed!\n");
 	}
 
 	if (console_ctx.cont_flag) {
-		printk("[timestamp: %u] temp: %d.%06d; press: %d.%06d; humidity: %d.%06d;\n",
-			ctx->state.timestamp, ctx->state.temp.val1,
-			ctx->state.temp.val2,
-			ctx->state.press.val1, ctx->state.press.val2,
-			ctx->state.humidity.val1, ctx->state.humidity.val2);
+		snprintk(buf, 512, "temp: %d.%06d; press: %d.%06d; humidity: %d.%06d;\n",
+			state.temp.val1, state.temp.val2,
+			state.press.val1, state.press.val2,
+			state.humidity.val1, state.humidity.val2);
+
+		uart_pipe_send((const char*) buf, strlen(buf));
 	}
 }
 
@@ -331,16 +351,21 @@ static uint8_t *console_rx_handler(uint8_t *buf, size_t *off)
 	return buf;
 }
 
+static inline uint8_t console_get_num(const uint8_t *buf)
+{
+	return (*(buf + 1) - 48) + ((*buf) - 48) * 10;
+}
+
 /* ASSUMPTION: the command consists of two bytes */
 static inline uint8_t console_get_command_id(const uint8_t *buf)
 {
-
-	return (*(buf + 1) - 48) + ((*buf) - 48) * 10;
+	return console_get_num(buf);
 }
 
 static void console_worker(struct k_work *item)
 {
 	int status;
+	unsigned int off = 0;
 	size_t bytes_written;
 	enum disk_cmds disk_cmd = NOP;
 	const uint8_t cmd_id = console_get_command_id(console_ctx.rx_buf);	
@@ -349,6 +374,9 @@ static void console_worker(struct k_work *item)
 	switch (cmd_id) {
 	case START_MEASUREMENTS:
 		disk_cmd = FILE_CREATE;
+		/* <cmd-id(2 bytes)>:<sample-rate(2 bytes)>:<file-name> */
+		off = 6;
+		rtc_alarm_cfg.ticks = console_get_num(&console_ctx.rx_buf[3]);
 		counter_set_channel_alarm(rtc, 0, &rtc_alarm_cfg); 
 		break;	
 	case STOP_MEASUREMENTS:
@@ -356,6 +384,7 @@ static void console_worker(struct k_work *item)
 		disk_cmd = FILE_CLOSE;
 		break;
 	case GET_MEASUREMENTS:
+		off = 3;
 		disk_cmd = FILE_READ;
 		break;
 	case SET_SAMPLING_INTERVAL:
@@ -373,10 +402,13 @@ static void console_worker(struct k_work *item)
 
 	if (disk_cmd != NOP) {
 		k_poll_signal_raise(&disk_sig, disk_cmd);
-		status = k_pipe_put(&fs_ops_path_pipe, &console_ctx.rx_buf[2], console_ctx.rx_buf_len - 2,
-					&bytes_written, console_ctx.rx_buf_len - 2, K_FOREVER);	
-		if (status) {
-			printk("k_pipe_put() failed!\n");
+		if (disk_cmd == FILE_READ || disk_cmd == FILE_CREATE) {
+			status = k_pipe_put(&fs_ops_path_pipe, &console_ctx.rx_buf[off],
+					console_ctx.rx_buf_len - off, &bytes_written, 
+					console_ctx.rx_buf_len - off, K_FOREVER);	
+			if (status) {
+				printk("k_pipe_put() failed!\n");
+			}
 		}
 	}
 
@@ -406,7 +438,6 @@ static int ls(const char *path)
 			break;
 		}
 				
-		/* use snprintf or something */
 		if (dir_entry.type == FS_DIR_ENTRY_FILE) {
 			snprintk(buf, 128, "FILE: %s (%d bytes)\n", dir_entry.name, 
 								dir_entry.size);
