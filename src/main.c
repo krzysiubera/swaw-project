@@ -17,7 +17,6 @@
 #include "disk_cmds.h"
 LOG_MODULE_REGISTER(main);
 
-static int lsdir(const char *path);
 #define DISK_WRITE_REQ		(0x0101)
 #define DISK_READ_REQ		(0x0100)
 #define DISK_DMA_READ_REQ	(0x0110)
@@ -78,6 +77,7 @@ K_THREAD_STACK_DEFINE(disk_stack, 4096);
 static struct k_thread disk_thr;
 
 static int disk_init(const char *pdrv);
+static int ls(const char *path);
 
 void rtc_alarm_handler(const struct device *dev, uint8_t chan_id,
 				uint32_t ticks, void *user_data);
@@ -139,14 +139,9 @@ void disk_worker(void *a, void *b, void *c)
 	};
 
 	struct bme280_state sensor_data[2];
-	const char read_req_info[] = "disk_worker: READ_REQ\n";
 	static char fs_ops_buf[CONSOLE_BUF_SIZE]; 
 	static char sensor_data_stream[512]; //number completely out of blue 
 
-	/* 
-	 * only two dirs and files can be opened at the same time
-	 * one is READ-ONLY, the second one is WRITE-ONLY */
-	//struct fs_dir_t dir[2];
 	struct fs_file_t file[2];
 
 	for (;;) {
@@ -156,36 +151,9 @@ void disk_worker(void *a, void *b, void *c)
 								console_ctx.rx_buf_len - 2, K_NO_WAIT);
 
 		switch (disk_events[0].signal->result) {
-	//	case CREATE_DIR:
-	//		printk("CREATE_DIR\n");
-	//		status = fs_mkdir((const char*) fs_ops_buf);	
-	//		if (status) {
-	//			printk("fs_mkdir() fail: %d\n", status);
-	//			break;
-	//		}
-	//	case OPEN_DIR:
-	//		fs_dir_t_init(&dir);
-	//		printk("init ok\n");
-	//		status = fs_opendir(&dir, fs_ops_buf);
-	//		if (status) {
-	//			printk("fs_opendir() fail: %d\n", status);
-	//			break;
-	//		}
-	//		
-	//		printk("opendir ok\n");
-	//		status = lsdir(fs_ops_buf);
-	//		if (status) {
-	//			printk("lsdir() fail: %d\n", status);
-	//			break;
-	//		}
-	//		printk("lsdir ok\n");
-	//		break;
-	//	case CLOSE_DIR:
-	//		status = fs_closedir(&dir);
-	//		if (status) {
-	//			printk("fs_closedir() fail: %d\n", status);
-	//		}
-	//		break;
+		case LIST_FILES:
+			ls(FATFS_MOUNT_PT); 
+			break;	
 		case FILE_CREATE:
 			printk("FILE CREATE\n");
 			fs_file_t_init(&file[WRITE_DESC]);
@@ -208,13 +176,12 @@ void disk_worker(void *a, void *b, void *c)
 			}
 			break;
 		case FILE_READ:
-			/* open for read */
 			printk("FILE READ\n");
 			fs_file_t_init(&file[READ_DESC]);
 			status = fs_open(&file[READ_DESC], (const char*) fs_ops_buf,
 									FS_O_READ);
 			if (status < 0) {
-				printk("fs_open error: %d\n");
+				printk("fs_open error: %d\n", status);
 			}
 
 			do {
@@ -234,8 +201,7 @@ void disk_worker(void *a, void *b, void *c)
 					sensor_data[READ_DESC].press.val2,
 					sensor_data[READ_DESC].humidity.val1,
 					sensor_data[READ_DESC].humidity.val2);
-				printk("press: %d.%06d\n", sensor_data[READ_DESC].press.val1,
-								sensor_data[READ_DESC].press.val2);
+
 				uart_pipe_send((const uint8_t*) sensor_data_stream,
 							strlen(sensor_data_stream));
 			} while (bytes_read != 0);
@@ -399,14 +365,13 @@ static void console_worker(struct k_work *item)
 		console_ctx.cont_flag ^= 1;
 		break;
 	case LIST_MEASUREMENTS:
-		disk_cmd = LIST_DIRS;
+		disk_cmd = LIST_FILES;
 		break;
 	default:
 		break;
 	}
 
-	/* find more elegant way for checking this flags e.g. make proper ascending fields in enum */
-	if (disk_cmd != NOP && disk_cmd != LIST_DIRS && disk_cmd != CLOSE_DIR) {
+	if (disk_cmd != NOP) {
 		k_poll_signal_raise(&disk_sig, disk_cmd);
 		status = k_pipe_put(&fs_ops_path_pipe, &console_ctx.rx_buf[2], console_ctx.rx_buf_len - 2,
 					&bytes_written, console_ctx.rx_buf_len - 2, K_FOREVER);	
@@ -419,41 +384,43 @@ static void console_worker(struct k_work *item)
 	uart_irq_rx_enable(console_ctx.dev);
 }
 
-static int lsdir(const char *path)
+static int ls(const char *path)
 {
-	int res;
-	struct fs_dir_t dirp;
-	static struct fs_dirent entry;
+	int status;
+	struct fs_dir_t dir;
+	struct fs_dirent dir_entry;
+	char buf[128];
 
-	fs_dir_t_init(&dirp);
+	/* initialize directory instance */	
+	fs_dir_t_init(&dir);
 
-	/* Verify fs_opendir() */
-	res = fs_opendir(&dirp, path);
-	if (res) {
-		printk("Error opening dir %s [%d]\n", path, res);
-		return res;
+	status = fs_opendir(&dir, path);
+	if (status < 0) {
+		printk("fs_opendir() error: %d\n", status);
+		return -EINVAL;	
 	}
 
-	printk("\nListing dir %s ...\n", path);
 	for (;;) {
-		/* Verify fs_readdir() */
-		res = fs_readdir(&dirp, &entry);
-
-		/* entry.name[0] == 0 means end-of-dir */
-		if (res || entry.name[0] == 0) {
+		status = fs_readdir(&dir, &dir_entry);
+		if ((status < 0) || (dir_entry.name[0] == 0)) {
 			break;
 		}
-
-		if (entry.type == FS_DIR_ENTRY_DIR) {
-			printk("[DIR ] %s\n", entry.name);
+				
+		/* use snprintf or something */
+		if (dir_entry.type == FS_DIR_ENTRY_FILE) {
+			snprintk(buf, 128, "FILE: %s (%d bytes)\n", dir_entry.name, 
+								dir_entry.size);
 		} else {
-			printk("[FILE] %s (size = %zu)\n",
-				entry.name, entry.size);
+			snprintk(buf, 128, "DIR: %s\n", dir_entry.name);
 		}
+
+		uart_pipe_send((const uint8_t*) buf, strlen(buf));
 	}
 
-	/* Verify fs_closedir() */
-	fs_closedir(&dirp);
-
-	return res;
+	status = fs_closedir(&dir);
+	if (status < 0) {
+		printk("fs_closedir() error: %d\n", status);	
+	}
+	
+	return 0;
 }
