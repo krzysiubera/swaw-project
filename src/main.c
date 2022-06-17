@@ -221,6 +221,8 @@ void disk_worker(void *a, void *b, void *c)
 					
 			}
 
+			uart_pipe_send((const uint8_t*) "EOF\n", 4);
+
 			fs_close(&file[READ_DESC]);
 			break;
 		case FILE_CLOSE:
@@ -431,14 +433,16 @@ static int ls(const char *path)
 		}
 				
 		if (dir_entry.type == FS_DIR_ENTRY_FILE) {
-			snprintk(buf, 128, "FILE: %s (%d bytes)\n", dir_entry.name, 
+			snprintk(buf, 128, "FILE: %s (%d bytes) ", dir_entry.name, 
 								dir_entry.size);
 		} else {
-			snprintk(buf, 128, "DIR: %s\n", dir_entry.name);
+			snprintk(buf, 128, "DIR: %s ", dir_entry.name);
 		}
 
 		uart_pipe_send((const uint8_t*) buf, strlen(buf));
 	}
+
+	uart_pipe_send((const uint8_t*) "\n", 1);
 
 	status = fs_closedir(&dir);
 	if (status < 0) {
