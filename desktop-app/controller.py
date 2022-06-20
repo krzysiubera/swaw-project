@@ -59,14 +59,12 @@ class Controller:
 
     def update_timer_callback(self):
         if self.view.tab_widget.currentWidget() is self.view.last_measurements_widget:
-            print(f"{datetime.datetime.now()} - enable continuous")
             self._enable_continuous_measurements()
             continuous_mode_info: ContinuousModeInformation = self.model.get_data_from_continuous_mode()
-            print(f"{datetime.datetime.now()} - received data from embedded system")
             self.view.last_update_label.setText(f"{datetime.datetime.now().strftime('%d-%m-%y %H:%M:%S')}")
-            self.view.temperature_label.setText(f"{continuous_mode_info.temperature} deg C")
-            self.view.pressure_label.setText(f"{continuous_mode_info.pressure} hPa")
-            self.view.humidity_label.setText(f"{continuous_mode_info.humidity} %")
+            self.view.temperature_label.setText(f"{continuous_mode_info.temperature:.2f} deg C")
+            self.view.pressure_label.setText(f"{continuous_mode_info.pressure:.2f} hPa")
+            self.view.humidity_label.setText(f"{continuous_mode_info.humidity:.2f} %")
         else:
             self._disable_continuous_measurements()
 
